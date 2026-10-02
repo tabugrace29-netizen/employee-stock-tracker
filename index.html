@@ -1,8 +1,175 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stock Inventory, Sales & Branch Management</title><style>body{font-family:Arial;margin:0;background:#f5f7fb;color:#172033}header{background:#274c77;color:white;padding:18px}main{max-width:1000px;margin:auto;padding:18px}.card{background:white;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 2px 10px #0001}button{background:#2a9d8f;color:white;border:0;border-radius:9px;padding:12px 18px;margin:4px;font-weight:bold}.out{background:#e76f51}input,select{padding:10px;border:1px solid #ccd3df;border-radius:8px;margin:4px}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #eee;text-align:left}nav button{background:#457b9d}.hidden{display:none}.kpi{display:inline-block;margin:7px;padding:12px;background:#e8f2ff;border-radius:10px}.mv-badge{display:inline-block;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:bold}.mv-sold{background:#2a9d8f}.mv-freebies{background:#457b9d}.mv-pull-out{background:#e76f51}.mv-transferred{background:#f4a261}.mv-swap{background:#7b2cbf}.branch-history{margin-top:18px;background:#f7f9fc;padding:14px;border-radius:10px}.swap-box{margin-top:14px;background:#f3edff;padding:14px;border-radius:10px}.stock-zero{background:#ffe5e5}.stock-low{background:#fff1d6}.stock-ok{background:#eaf7ee}</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body><header><h2>Stock Inventory, Sales & Branch Management</h2><small>Shared branch inventory and sales system</small></header><main><nav><button onclick="openAdmin()">Admin</button><button onclick="openBranchLogin()">Branch Login</button><button id="stockNav" class="hidden" onclick="show('stock')">Stock Movements</button><button id="currentStockNav" class="hidden" onclick="show('currentStock')">Current Stock Tracker</button><button id="summaryNav" class="hidden" onclick="show('salesExpenseSummary')">Sales & Expenses</button><button id="logoutBtn" class="hidden out" onclick="adminLogout()">Admin Logout</button></nav><div id="adminLogin" class="card hidden"><h3>Admin Login</h3><input id="adminEmail" type="email" placeholder="Admin Email"><input id="adminPass" type="password" placeholder="Admin Password"><button type="button" onclick="togglePassword('adminPass',this)">Show</button><button onclick="adminLogin()">Login</button><p id="loginMsg"></p><small>Use the Supabase Admin email and password.</small></div><div id="branchLogin" class="card hidden"><h3>Branch Login</h3><input id="branchUser" type="email" placeholder="Branch Email"><input id="branchPass" type="password" placeholder="Branch Password"><button type="button" onclick="togglePassword('branchPass',this)">Show</button><button onclick="doBranchLogin()">Login</button><p id="branchLoginMsg"></p><small>Use the Supabase branch email and password.</small></div><section id="branchPanel" class="card hidden"><h3>Branch Stock Movement</h3><p>Logged in branch: <b id="branchPanelName"></b></p><p>Branch access: SOLD, TRANSFERRED, PULL OUT, FREEBIES, and BACK JOB. RESTOCK remains Admin-only.</p><label><b>Date:</b> <input id="branchMovementDate" type="date"></label><select id="branchMoveCategory" onchange="updateBranchProducts(this.value)"><option value="">Select Category</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select><select id="branchMoveProduct"><option value="">Select Product</option></select><select id="branchMovement" onchange="toggleBackJobDirection()"><option>SOLD</option><option>TRANSFERRED</option><option>PULL OUT</option><option>FREEBIES</option><option>BACK JOB</option></select><select id="branchBackJobDirection" class="hidden"><option>IN</option><option>OUT</option></select><input id="branchMoveQty" type="number" min="1" value="1"><input id="branchAmount" type="number" min="0" step="0.01" placeholder="Amount"><input id="branchDownpayment" type="number" min="0" step="0.01" placeholder="Downpayment"><input id="branchPaymentMethod" type="text" placeholder="Payment Method"><input id="branchMoveNotes" placeholder="Notes"><button onclick="saveBranchMovement()">Save Branch Movement</button><button class="out" onclick="branchLogout()">Branch Logout</button><p id="branchMoveMsg"></p><div class="swap-box"><h4>Clear Case Swap</h4><p>Use this when changing the clear case from a gift box to the clear case that fits the customer’s purchased phone. Saving one swap records the case removed as OUT and the replacement case as IN.</p><label><b>Date:</b> <input id="swapDate" type="date"></label><select id="swapFromCase"><option value="">Case Removed</option></select><span> → </span><select id="swapToCase"><option value="">Case Added</option></select><input id="swapQty" type="number" min="1" value="1" placeholder="Quantity"><input id="swapNotes" placeholder="Reason / Notes"><button onclick="saveClearCaseSwap()">Save Clear Case Swap</button><p id="swapMsg"></p></div><div class="branch-history"><h4>My Branch Transactions</h4><div><label>From: <input id="bhFrom" type="date" onchange="renderBranchHistory()"></label><label>To: <input id="bhTo" type="date" onchange="renderBranchHistory()"></label><select id="bhCategory" onchange="renderBranchHistory()"><option value="">All categories</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select><input id="bhProduct" placeholder="Filter product" oninput="renderBranchHistory()"><select id="bhMovement" onchange="renderBranchHistory()"><option value="">All movements</option><option>SOLD</option><option>FREEBIES</option><option>PULL OUT</option><option>TRANSFERRED</option><option>BACK JOB</option><option>SWAP</option></select><button onclick="clearBranchHistoryFilters()">Clear Filters</button></div><div id="branchHistoryCount" class="kpi"></div><div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Movement</th><th>Direction</th><th>Quantity</th><th>Amount</th><th>Payment</th><th>Notes</th></tr></thead><tbody id="branchHistoryRows"></tbody></table></div></div><div id="branchExpensesBox" style="background:#fff7df;padding:12px;border-radius:10px;margin-top:12px"><h4>Branch Related Expenses</h4><label><b>Date:</b> <input id="expenseDate" type="date"></label><input id="expenseDescription" placeholder="Expense Description"><input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount"><input id="expenseNotes" placeholder="Expense Notes"><button onclick="saveBranchExpense()">Save Expense</button><p id="expenseMsg"></p><div id="branchExpenseList"></div></div></section><section id="admin" class="card hidden"><h3>Admin Management Dashboard</h3><div style="background:#f7f9fc;padding:12px;border-radius:10px;margin-bottom:12px"><h4>Branch Login Management</h4><p>Manage each branch login name, username, PIN, and access status.</p><input id="newBranch" placeholder="New branch name"><input id="newBranchUser" placeholder="Branch username"><input id="newBranchPin" type="password" placeholder="PIN / Password"><button type="button" onclick="togglePassword('newBranchPin',this)">Show</button><button onclick="addBranch()">Add New Branch Login</button><p id="branchManageMsg"></p><div id="branchList"></div><hr><h4>Employee Accounts</h4><input id="newEmpName" placeholder="Employee name"><input id="newEmpUser" placeholder="Username"><input id="newEmpPass" type="password" placeholder="Password" value="1234"><small> Default employee password: 1234</small><select id="newEmpBranch"></select><button onclick="addEmployee()">Add Employee</button><p id="accountMsg"></p><table><thead><tr><th>Name</th><th>Username</th><th>Branch</th><th>Action</th></tr></thead><tbody id="accounts"></tbody></table></div><div><input id="newPin" type="password" placeholder="New admin PIN"><button onclick="changePin()">Change Admin PIN</button></div><div class="hidden"><div><input id="femp" placeholder="Filter employee" oninput="render()"><select id="fbranch" onchange="render()"><option value="">All branches</option></select><input id="fdate" type="date" onchange="render()"><select id="ftype" onchange="render()"><option value="">All types</option><option>IN</option><option>OUT</option></select><select id="fstatus" onchange="render()"><option value="">All status</option><option>On Time</option><option>Late</option></select><button onclick="clearFilters()">Clear Filters</button><div style="margin-top:10px"><label>Work start time: <input id="startTime" type="time" value="09:00" onchange="saveStart();render()"></label><small> Time In after this is marked Late.</small></div></div><div id="report" style="margin:12px 0"></div><button onclick="exportCSV()">Download Filtered Attendance CSV</button><table><thead><tr><th>Employee</th><th>Branch</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th></tr></thead><tbody id="rows"></tbody></table></section></div><section id="currentStock" class="card hidden"><h3>Current Stock Tracker</h3><div><select id="currentStockBranch" onchange="renderCurrentStock()"><option value="">All branches</option></select><select id="currentStockCategory" onchange="renderCurrentStock()"><option value="">All categories</option></select><input id="currentStockProduct" placeholder="Filter product" oninput="renderCurrentStock()"><button onclick="clearCurrentStockFilters()">Clear Filters</button></div><div id="currentStockKpis" style="margin:12px 0"></div><table><thead><tr><th>Branch</th><th>Product</th><th>Category</th><th>Current Stock</th></tr></thead><tbody id="currentStockRows"></tbody></table><div class="card" style="background:#f7f9fc"><h3>Sales for Selected Period</h3><div><select id="salesPeriodBranch" onchange="renderSalesPeriod()"><option value="">All branches</option></select><select id="salesPeriodCategory" onchange="renderSalesPeriod()"><option value="">All categories</option></select><input id="salesPeriodProduct" placeholder="Filter product" oninput="renderSalesPeriod()"><label>From: <input id="salesPeriodFrom" type="date" onchange="renderSalesPeriod()"></label><label>To: <input id="salesPeriodTo" type="date" onchange="renderSalesPeriod()"></label><select id="salesPeriodMonth" onchange="applySalesMonth()"><option value="">Month</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input id="salesPeriodYear" type="number" min="2020" max="2100" placeholder="Year" onchange="applySalesMonth()"><button onclick="clearSalesPeriodFilters()">Clear Filters</button><button onclick="exportSalesCSV()">Download Sales CSV</button></div><div id="salesPeriodKpis" style="margin:12px 0"></div><h4>Units Sold per Category</h4><table><thead><tr><th>Category</th><th>Units Sold</th></tr></thead><tbody id="salesCategoryRows"></tbody></table><h4>Units Sold per Product</h4><table><thead><tr><th>Branch</th><th>Category</th><th>Product</th><th>Units Sold</th><th>Sales Amount</th></tr></thead><tbody id="salesProductRows"></tbody></table><h4>Top Selling Products</h4><table><thead><tr><th>Rank</th><th>Product</th><th>Category</th><th>Units Sold</th><th>Sales Amount</th></tr></thead><tbody id="topSellingRows"></tbody></table></div></section><section id="salesExpenseSummary" class="card hidden"><h3>Sales and Expenses Summary</h3><select id="sumBranch" onchange="renderSalesExpenseSummary()"><option value="">All branches</option></select><select id="sumCategory" onchange="renderSalesExpenseSummary()"><option value="">All categories</option></select><label>From: <input id="sumFrom" type="date" onchange="renderSalesExpenseSummary()"></label><label>To: <input id="sumTo" type="date" onchange="renderSalesExpenseSummary()"></label><button onclick="clearSalesExpenseFilters()">Clear Filters</button><div id="salesExpenseKpis" class="grid"></div><h4>Sales and Expenses Details</h4><table><thead><tr><th>Date</th><th>Branch</th><th>Category</th><th>Product / Description</th><th>Sales</th><th>Downpayment</th><th>Remaining Balance</th><th>Expenses</th><th>Action</th></tr></thead><tbody id="salesExpenseRows"></tbody></table></section><section id="stock" class="card hidden"><h3>Admin Stock Movement Management</h3><div style="background:#f7f9fc;padding:12px;border-radius:10px;margin:12px 0"><h3>Inventory Report Summary</h3><div><select id="invBranch" onchange="render()"><option value="">All branches</option></select><select id="invCategory" onchange="render()"><option value="">All categories</option></select><input id="invProduct" placeholder="Filter product" oninput="render()"><select id="invType" onchange="render()"><option value="">All movement types</option><option>RESTOCK</option><option>SOLD</option><option>FREEBIES</option><option>TRANSFERRED</option><option>PULL OUT</option><option>BACK JOB</option><option>FROM GIFT BOX</option><option>SWAP</option></select><select id="invDir" onchange="render()"><option value="">IN & OUT</option><option>IN</option><option>OUT</option></select><label>From: <input id="invFrom" type="date" onchange="render()"></label><label>To: <input id="invTo" type="date" onchange="render()"></label><button onclick="clearInventoryFilters()">Clear</button><button onclick="exportInventoryCSV()">Download Report CSV</button></div><div id="inventoryKpis" style="margin:12px 0"></div><table><thead><tr><th>Date</th><th>Branch Name</th><th>Product Name</th><th>Quantity</th><th>Category</th><th>Notes</th><th>Amount</th><th>Action</th></tr></thead><tbody id="inventorySummary"></tbody></table></div><p><b>Admin:</b> Add new movement records below or delete an incorrect movement from the table.</p><div style="background:#fff7df;padding:12px;border-radius:10px;margin:12px 0"><h4>Add Upcoming / Other Product</h4><p>Add a product here and it will become available in the Select Product dropdown.</p><select id="otherCategory"><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select><input id="otherProduct" placeholder="New product name"><button onclick="addOtherProduct()">Add Product</button><p id="otherProductMsg"></p><div id="customProducts"></div></div><p>Select a date, category and product, then enter the movement details.</p><label><b>Movement Date:</b> <input id="movementDate" type="date"></label><select id="movementBranch"></select><select id="category" onchange="updateProductDropdown(this.value)"><option value="">Select Category</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select><select id="product"><option value="">Select Product</option></select><select id="movement"><option>RESTOCK</option><option>SOLD</option><option>FREEBIES</option><option>TRANSFERRED</option><option>PULL OUT</option><option>BACK JOB</option><option>FROM GIFT BOX</option></select><select id="direction"><option>IN</option><option>OUT</option></select><input id="qty" type="number" min="1" value="1"><input id="notes" placeholder="Notes"><button onclick="addMovement()">Save Movement</button><table><thead><tr><th>Date</th><th>Branch</th><th>Product</th><th>Type</th><th>Dir.</th><th>Qty</th><th>Action</th></tr></thead><tbody id="moves"></tbody></table><div class="card" style="background:#f7f9fc"><h3>Transaction Export & Archive</h3><p>Export first. Archive copies records to stock_movements_archive without deleting active stock history, so Current Stock cannot change.</p><label>From: <input id="archiveFrom" type="date"></label><label>To: <input id="archiveTo" type="date"></label><select id="archiveBranch"><option value="">All branches</option></select><button onclick="exportArchiveCSV()">Export Transactions CSV</button><button class="out" onclick="archiveTransactionsSafe()">Archive Exported Range</button><p id="archiveMsg"></p></div></section></main><script>function togglePassword(id,btn){let e=document.getElementById(id);if(!e)return;let v=e.type==='password';e.type=v?'text':'password';btn.textContent=v?'Hide':'Show'}function show(id){if((id==='stock'||id==='currentStock'||id==='salesExpenseSummary'||id==='admin')&&!isAdmin()){openAdmin();return}document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');render()}function get(k){return JSON.parse(localStorage.getItem(k)||'[]')}function put(k,v){localStorage.setItem(k,JSON.stringify(v))}function stamp(type){let n=sessionStorage.getItem('employeeName');if(!n)return msg.textContent='Please log in first.';let d=new Date(),a=get('attendance');a.push({employee:n,branch:sessionStorage.getItem('employeeBranch')||'UNASSIGNED',date:d.toLocaleDateString(),isoDate:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),time:d.toLocaleTimeString(),type});put('attendance',a);msg.textContent=type+' recorded: '+d.toLocaleString();render()}const PRODUCT_CATALOG={"GENERAL UNITS": ["IPHONE UNITS", "GIFT BOX", "ADAPTOR", "CORD", "ROBOT CORD", "AIRPODS GEN 2", "AIRPODS GEN 3", "AIRPODS PRO 2", "ADAPTOR ACOME", "VIVAN POWERBANK", "APPLE WATCH", "IPHONE 6", "REALME TABLET", "IPAD MINI 4", "IPAD MINI 2", "GALAXY A16 B-NEW", "GALAXY A16 PRE-OWNED", "CORD USB LIGHTNING", "INFINIX SMART 10", "ANDROID PHONE"], "CLEAR CASE": ["XS MAX", "XR", "11", "11 PRO", "11 PROMAX", "12/12PRO", "12 PROMAX", "13/14/16E", "13 PRO", "13 PROMAX", "14 PRO", "14/15 PLUS", "14 PROMAX", "15", "15 PRO", "15 PROMAX", "16", "16 PLUS", "16 PRO", "16 PROMAX", "17", "17 PRO", "17 PROMAX"], "SILICON CASE": ["XS MAX", "XR", "11", "11 PRO", "11 PROMAX", "12/12PRO", "12 PROMAX", "13/14/16E", "13 PRO", "13 PROMAX", "14 PRO", "14/15 PLUS", "14 PROMAX", "15", "15 PRO", "15 PROMAX", "16", "16 PLUS", "16 PRO", "16 PROMAX", "17", "17 PRO", "17 PROMAX"], "TEMPERED GLASS": ["TG 11/XR", "TG 11 PRO", "TG 11 PROMAX", "TG 12/12PRO", "TG 12 PROMAX", "TG 13/14/13PRO/16E", "TG 13 PROMAX", "TG 14 PRO", "TG 14 PROMAX", "TG IP 14/15 PLUS", "TG 15", "TG 15 PRO", "TG 15 PROMAX", "TG 16", "TG 16 PRO", "TG 16 PROMAX", "TG 16 PLUS", "TG 17", "TG 17 PRO", "TG 17 PROMAX"]};function initMovementDate(){let e=document.getElementById('movementDate');if(e&&!e.value){let d=new Date();e.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}}function customProductList(){return get('customProducts')}function allProductsByCategory(c){return [...(PRODUCT_CATALOG[c]||[]),...customProductList().filter(x=>x.category===c).map(x=>x.name)]}function updateProductDropdown(selectedCategory){let c=document.getElementById('category'),p=document.getElementById('product');if(!c||!p)return;let key=typeof selectedCategory==='string'?selectedCategory:c.value;let list=key?allProductsByCategory(key):Object.keys(PRODUCT_CATALOG).flatMap(k=>allProductsByCategory(k));p.innerHTML='';let first=document.createElement('option');first.value='';first.textContent='Select Product';p.appendChild(first);[...new Set(list)].forEach(name=>{let o=document.createElement('option');o.value=name;o.textContent=name;p.appendChild(o)})}function addOtherProduct(){if(!isAdmin()){alert('Admin access required.');return}let c=document.getElementById('otherCategory'),n=document.getElementById('otherProduct'),m=document.getElementById('otherProductMsg');let categoryName=c.value,productName=n.value.trim().toUpperCase();if(!productName){m.textContent='Please enter a product name.';return}let a=customProductList();if((PRODUCT_CATALOG[categoryName]||[]).includes(productName)||a.some(x=>x.category===categoryName&&x.name===productName)){m.textContent='That product already exists in this category.';return}a.push({category:categoryName,name:productName});put('customProducts',a);n.value='';m.textContent='Product added and available in the dropdown.';updateProductDropdown(document.getElementById('category').value);renderCustomProducts()}function deleteOtherProduct(i){if(!isAdmin())return;if(confirm('Delete this added product?')){let a=customProductList();a.splice(i,1);put('customProducts',a);updateProductDropdown(document.getElementById('category').value);renderCustomProducts()}}function renderCustomProducts(){let el=document.getElementById('customProducts');if(!el)return;let a=customProductList();el.innerHTML=a.length?'<b>Added products:</b><br>'+a.map((x,i)=>`${x.category}: ${x.name} <button class="out" onclick="deleteOtherProduct(${i})">Delete</button>`).join('<br>'):'<small>No additional products added yet.</small>'}function defaultBranches(){return ['BATAAN','CAPAS','CONCEPCION','PANIQUI','GUIMBA','BRANCH 6']}function branchLoginData(){let a=get('branchLogins'),names=get('branches');if(!names.length)names=defaultBranches();names.forEach(n=>{if(!a.some(x=>x.name===n))a.push({name:n,username:n.toLowerCase().replace(/[^a-z0-9]+/g,''),pin:'1234',enabled:true})});put('branchLogins',a);put('branches',a.map(x=>x.name));return a}function branchListData(){return branchLoginData().map(x=>x.name)}function renderBranches(){let a=branchLoginData(),sel=document.getElementById('newEmpBranch'),box=document.getElementById('branchList'),ms=document.getElementById('movementBranch'),names=a.map(x=>x.name);if(sel){let old=sel.value;sel.innerHTML=names.map(x=>`<option>${x}</option>`).join('');if(names.includes(old))sel.value=old}if(ms){let old=ms.value;ms.innerHTML=names.map(x=>`<option>${x}</option>`).join('');if(names.includes(old))ms.value=old}if(box)box.innerHTML='<table><thead><tr><th>Branch Name</th><th>Username</th><th>PIN</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+a.map((x,i)=>`<tr><td><input id="branchName_${i}" value="${x.name}"></td><td><input id="branchUser_${i}" value="${x.username||''}"></td><td><input id="branchPin_${i}" type="password" value="${x.pin||'1234'}"><button type="button" onclick="togglePassword('branchPin_${i}',this)">Show</button></td><td><select id="branchEnabled_${i}"><option value="true" ${x.enabled!==false?'selected':''}>Enabled</option><option value="false" ${x.enabled===false?'selected':''}>Disabled</option></select></td><td><button onclick="saveBranchLogin(${i})">Save</button><button onclick="resetBranchPin(${i})">Reset PIN</button><button class="out" onclick="deleteBranch(${i})">Delete</button></td></tr>`).join('')+'</tbody></table>'}function syncBranchNames(a){put('branchLogins',a);put('branches',a.map(x=>x.name))}function addBranch(){if(!isAdmin())return;let name=document.getElementById('newBranch').value.trim().toUpperCase(),user=document.getElementById('newBranchUser').value.trim(),pin=document.getElementById('newBranchPin').value.trim()||'1234',msg=document.getElementById('branchManageMsg');if(!name||!user){msg.textContent='Enter a branch name and username.';return}let a=branchLoginData();if(a.some(x=>x.name===name||x.username===user)){msg.textContent='Branch name or username already exists.';return}a.push({name,username:user,pin,enabled:true});syncBranchNames(a);document.getElementById('newBranch').value='';document.getElementById('newBranchUser').value='';document.getElementById('newBranchPin').value='';msg.textContent='Branch login added.';renderBranches();renderBranchLoginOptions()}function saveBranchLogin(i){if(!isAdmin())return;let a=branchLoginData(),old=a[i].name,name=document.getElementById('branchName_'+i).value.trim().toUpperCase(),user=document.getElementById('branchUser_'+i).value.trim(),pin=document.getElementById('branchPin_'+i).value.trim(),enabled=document.getElementById('branchEnabled_'+i).value==='true';if(!name||!user||!pin){alert('Branch name, username, and PIN are required.');return}if(a.some((x,j)=>j!==i&&(x.name===name||x.username===user))){alert('Branch name or username already exists.');return}a[i]={name,username:user,pin,enabled};syncBranchNames(a);let em=get('employees');em.forEach(e=>{if(e.branch===old)e.branch=name});put('employees',em);renderBranches();renderBranchLoginOptions();render();alert('Branch login updated successfully.')}function resetBranchPin(i){if(!isAdmin())return;let a=branchLoginData();if(!confirm('Reset PIN for '+a[i].name+' to 1234?'))return;a[i].pin='1234';syncBranchNames(a);renderBranches();alert('Branch PIN reset to 1234.')}function deleteBranch(i){if(!isAdmin())return;let a=branchLoginData(),name=a[i].name;if(get('employees').some(e=>e.branch===name)){alert('Move employees to another branch before deleting this branch.');return}if(confirm('Delete '+name+' branch login?')){a.splice(i,1);syncBranchNames(a);renderBranches();renderBranchLoginOptions();render()}}function openBranchLogin(){document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));document.getElementById('adminLogin').classList.add('hidden');document.getElementById('branchLogin').classList.remove('hidden');renderBranchLoginOptions()}function renderBranchLoginOptions(){let e=document.getElementById('branchLoginName');if(e)e.innerHTML=branchLoginData().filter(x=>x.enabled!==false).map(x=>`<option>${x.name}</option>`).join('')}function doBranchLogin(){let branch=document.getElementById('branchLoginName').value,user=document.getElementById('branchUser').value.trim(),pin=document.getElementById('branchPass').value,entry=branchLoginData().find(x=>x.name===branch);if(!entry||entry.enabled===false||entry.username!==user||entry.pin!==pin){document.getElementById('branchLoginMsg').textContent='Incorrect branch username or PIN, or branch login is disabled.';return}sessionStorage.setItem('branchSession',branch);document.getElementById('branchLogin').classList.add('hidden');document.getElementById('branchPanel').classList.remove('hidden');document.getElementById('branchPanelName').textContent=branch;initBranchMovementDate();updateBranchProducts('');initExpenseDate();renderBranchExpenses()}function branchLogout(){sessionStorage.removeItem('branchSession');document.getElementById('branchPanel').classList.add('hidden');document.getElementById('branchLogin').classList.remove('hidden')}function initBranchMovementDate(){let e=document.getElementById('branchMovementDate');if(e&&!e.value){let d=new Date();e.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}}function updateBranchProducts(c){let p=document.getElementById('branchMoveProduct');if(!p)return;if(p.tagName==='INPUT'){let sel=document.createElement('select');sel.id='branchMoveProduct';p.parentNode.replaceChild(sel,p);p=sel}p.innerHTML='';let first=document.createElement('option');first.value='';first.textContent='Select Product';p.appendChild(first);let list=c?allProductsByCategory(c):Object.keys(PRODUCT_CATALOG).flatMap(k=>allProductsByCategory(k));[...new Set(list)].forEach(name=>{let o=document.createElement('option');o.value=name;o.textContent=name;p.appendChild(o)})}function saveBranchMovement(){let branch=sessionStorage.getItem('branchSession');if(!branch){alert('Branch login required.');return}let type=document.getElementById('branchMovement').value,allowed=['SOLD','TRANSFERRED','PULL OUT','FREEBIES'];if(!allowed.includes(type)){alert('Movement not allowed for branch login.');return}let date=document.getElementById('branchMovementDate').value,category=document.getElementById('branchMoveCategory').value,product=document.getElementById('branchMoveProduct').value,qty=document.getElementById('branchMoveQty').value,amount=document.getElementById('branchAmount').value,paymentMethod=document.getElementById('branchPaymentMethod').value.trim(),notes=document.getElementById('branchMoveNotes').value.trim();if(!date||!category||!product||!qty){alert('Please complete date, category, product, and quantity.');return}let details='Branch: '+branch+'\nDate: '+date+'\nProduct: '+product+'\nMovement: '+type+'\nQuantity: '+qty+(amount?'\nAmount: '+amount:'')+(paymentMethod?'\nPayment Method: '+paymentMethod:'')+(notes?'\nNotes: '+notes:'');if(!confirm('Do you want to add this transaction?\n\n'+details))return;let a=get('moves');a.push({date,branch,employee:'BRANCH LOGIN',product,category,movement:type,direction:'OUT',qty,amount,paymentMethod,notes});put('moves',a);document.getElementById('branchMoveMsg').textContent='';render();alert('Transaction successfully entered.')}function toggleBranchExpenses(){let box=document.getElementById('branchExpensesBox');if(!box)return;box.classList.toggle('hidden');if(!box.classList.contains('hidden')){initExpenseDate();renderBranchExpenses()}}function initExpenseDate(){let e=document.getElementById('expenseDate');if(e&&!e.value){let d=new Date();e.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}}function saveBranchExpense(){let branch=sessionStorage.getItem('branchSession');if(!branch){alert('Branch login required.');return}let date=document.getElementById('expenseDate').value,description=document.getElementById('expenseDescription').value.trim(),amount=document.getElementById('expenseAmount').value,notes=document.getElementById('expenseNotes').value.trim();if(!date||!description||amount===''){alert('Please complete date, expense description, and amount.');return}let details='Branch: '+branch+'\nDate: '+date+'\nDescription: '+description+'\nAmount: '+amount+(notes?'\nNotes: '+notes:'');if(!confirm('Do you want to add this expense?\n\n'+details))return;let a=get('branchExpenses');a.push({date,branch,description,amount,notes});put('branchExpenses',a);document.getElementById('expenseDescription').value='';document.getElementById('expenseAmount').value='';document.getElementById('expenseNotes').value='';document.getElementById('expenseMsg').textContent='';renderBranchExpenses();render();alert('Expense successfully entered.')}function renderBranchExpenses(){let box=document.getElementById('branchExpenseList'),branch=sessionStorage.getItem('branchSession');if(!box||!branch)return;let a=get('branchExpenses').filter(x=>x.branch===branch).slice().reverse();box.innerHTML=a.length?'<table><thead><tr><th>Date</th><th>Expense</th><th>Amount</th><th>Notes</th></tr></thead><tbody>'+a.map(x=>`<tr><td>${x.date}</td><td>${x.description}</td><td>${x.amount}</td><td>${x.notes||''}</td></tr>`).join('')+'</tbody></table>':'<small>No branch expenses recorded yet.</small>'}function initEmployeeMovementDate(){let e=document.getElementById('empMovementDate');if(e&&!e.value){let d=new Date();e.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}}function updateEmployeeProducts(c){let p=document.getElementById('empMoveProduct');if(!p)return;let list=c?allProductsByCategory(c):[];p.innerHTML='<option value="">Select Product</option>'+[...new Set(list)].map(x=>`<option>${x}</option>`).join('')}function addEmployeeMovement(){let employee=sessionStorage.getItem('employeeName'),branch=sessionStorage.getItem('employeeBranch');if(!employee||!branch){alert('Employee login required.');return}let type=document.getElementById('empMovement').value,allowed=['SOLD','TRANSFERRED','PULL OUT','FREEBIES'];if(!allowed.includes(type)){alert('This movement type is not allowed for branch employees.');return}let date=document.getElementById('empMovementDate').value,category=document.getElementById('empMoveCategory').value,product=document.getElementById('empMoveProduct').value,qty=document.getElementById('empMoveQty').value,notes=document.getElementById('empMoveNotes').value;if(!date||!category||!product||!qty){alert('Please complete date, category, product, and quantity.');return}let a=get('moves');a.push({date,branch,employee,product,category,movement:type,direction:'OUT',qty,notes});put('moves',a);document.getElementById('empMoveMsg').textContent='Branch movement saved.';render()}function employeeLogin(){let u=empUser.value.trim(),p=empPass.value,a=get('employees'),e=a.find(x=>x.username===u&&x.password===p);if(!e){empLoginMsg.textContent='Incorrect username or password.';return}sessionStorage.setItem('employeeName',e.name);sessionStorage.setItem('employeeUser',e.username);sessionStorage.setItem('employeeBranch',e.branch||'UNASSIGNED');syncEmployeeUI()}function employeeLogout(){sessionStorage.removeItem('employeeName');sessionStorage.removeItem('employeeUser');sessionStorage.removeItem('employeeBranch');syncEmployeeUI()}function syncEmployeeUI(){let n=sessionStorage.getItem('employeeName');if(n){document.getElementById('employeeLogin').classList.add('hidden');employeePanel.classList.remove('hidden');signedEmployee.textContent=n;document.getElementById('signedBranch').textContent=sessionStorage.getItem('employeeBranch')||'UNASSIGNED';initEmployeeMovementDate()}else{document.getElementById('employeeLogin').classList.remove('hidden');employeePanel.classList.add('hidden')}}function addEmployee(){if(!isAdmin())return;let n=newEmpName.value.trim(),u=newEmpUser.value.trim(),p=newEmpPass.value,b=document.getElementById('newEmpBranch').value;if(!n||!u||p.length<4){accountMsg.textContent='Enter name, username, and a password of at least 4 characters.';return}let a=get('employees');if(a.some(x=>x.username===u)){accountMsg.textContent='Username already exists.';return}a.push({name:n,username:u,password:p,branch:b});put('employees',a);newEmpName.value='';newEmpUser.value='';newEmpPass.value='1234';accountMsg.textContent='Employee account added.';render()}function deleteEmployee(i){if(!isAdmin())return;if(confirm('Delete this employee account?')){let a=get('employees');a.splice(i,1);put('employees',a);render()}}function isAdmin(){return sessionStorage.getItem('isAdmin')==='1'}function openAdmin(){if(isAdmin()){show('admin')}else{document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));document.getElementById('adminLogin').classList.remove('hidden')}}function adminLogin(){let pin=localStorage.getItem('adminPin')||'1234';if(adminPass.value===pin){sessionStorage.setItem('isAdmin','1');document.getElementById('adminLogin').classList.add('hidden');stockNav.classList.remove('hidden');document.getElementById('currentStockNav').classList.remove('hidden');document.getElementById('summaryNav').classList.remove('hidden');logoutBtn.classList.remove('hidden');show('admin')}else loginMsg.textContent='Incorrect admin PIN.'}function adminLogout(){sessionStorage.removeItem('isAdmin');stockNav.classList.add('hidden');document.getElementById('currentStockNav').classList.add('hidden');document.getElementById('summaryNav').classList.add('hidden');logoutBtn.classList.add('hidden');openBranchLogin()}function changePin(){if(!isAdmin())return;if(newPin.value.length<4){alert('PIN must be at least 4 characters.');return}localStorage.setItem('adminPin',newPin.value);newPin.value='';alert('Admin PIN changed.')}function mins(t){let m=t.match(/(\d+):(\d+):(\d+)\s*(AM|PM)?/i);if(!m)return 0;let h=+m[1],mi=+m[2],ap=m[4];if(ap){if(ap.toUpperCase()==='PM'&&h<12)h+=12;if(ap.toUpperCase()==='AM'&&h===12)h=0}return h*60+mi}function workStart(){return localStorage.getItem('workStart')||'09:00'}function status(x){if(x.type!=='IN')return '';let [h,m]=workStart().split(':').map(Number);return mins(x.time)>h*60+m?'Late':'On Time'}function saveStart(){localStorage.setItem('workStart',startTime.value)}function filtered(){let a=get('attendance'),n=(window.femp?.value||'').toLowerCase(),br=(window.fbranch?.value||''),d=window.fdate?.value||'',t=window.ftype?.value||'',st=window.fstatus?.value||'';return a.filter(x=>(!n||x.employee.toLowerCase().includes(n))&&(!br||(x.branch||'UNASSIGNED')===br)&&(!d||x.isoDate===d)&&(!t||x.type===t)&&(!st||status(x)===st))}function filteredMoves(){let a=get('moves'),b=document.getElementById('invBranch')?.value||'',p=(document.getElementById('invProduct')?.value||'').toLowerCase(),t=document.getElementById('invType')?.value||'',d=document.getElementById('invDir')?.value||'';return a.filter(x=>(!b||(x.branch||'UNASSIGNED')===b)&&(!p||(x.product||'').toLowerCase().includes(p))&&(!t||x.movement===t)&&(!d||x.direction===d))}function clearInventoryFilters(){document.getElementById('invBranch').value='';invProduct.value='';invType.value='';invDir.value='';document.getElementById('invFrom').value='';document.getElementById('invTo').value='';render()}function exportInventoryCSV(){let a=filteredMoves(),s='Date,Branch Name,Product Name,Quantity,Category,Notes,Amount\n'+a.map(x=>[x.date||'',x.branch||'UNASSIGNED',x.product||'',x.qty||'',x.category||'',(x.movement||'')+(x.notes?': '+x.notes:''),x.amount||''].map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');let b=new Blob([s],{type:'text/csv'}),u=URL.createObjectURL(b),l=document.createElement('a');l.href=u;l.download='branch_stock_report.csv';l.click()}function renderInventorySummary(){let body=document.getElementById('inventorySummary'),kpis=document.getElementById('inventoryKpis');if(!body)return;let a=filteredMoves(),totalIn=0,totalOut=0;a.forEach(x=>{let q=Number(x.qty)||0;if(x.direction==='IN')totalIn+=q;else if(x.direction==='OUT')totalOut+=q});if(kpis)kpis.innerHTML=`<div class="kpi"><b>${a.length}</b><br>Movements</div><div class="kpi"><b>${totalIn}</b><br>Total IN</div><div class="kpi"><b>${totalOut}</b><br>Total OUT</div><div class="kpi"><b>${totalIn-totalOut}</b><br>Net Movement</div>`;body.innerHTML=a.slice().reverse().map(x=>{let movement=x.movement||'';let note=movement+(x.notes?': '+x.notes:'');return `<tr><td>${x.date||''}</td><td>${x.branch||'UNASSIGNED'}</td><td>${x.product||''}</td><td>${x.qty||''}</td><td>${x.category||''}</td><td>${note}</td><td>${x.amount||''}</td><td>${isAdmin()?`<button class="out" onclick="deleteMovementById('${x.id}')">Delete</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="8">No branch stock movements found.</td></tr>'}function renderBranchStockFilters(){let e=document.getElementById('invBranch');if(!e)return;let old=e.value;e.innerHTML='<option value="">All branches</option>'+branchListData().map(x=>`<option>${x}</option>`).join('');if([...e.options].some(o=>o.value===old))e.value=old}function renderCurrentStock(){let sb=document.getElementById('currentStockBranch'),rows=document.getElementById('currentStockRows'),kpis=document.getElementById('currentStockKpis');if(!sb||!rows)return;let old=sb.value;sb.innerHTML='<option value="">All branches</option>'+branchListData().map(x=>`<option>${x}</option>`).join('');if([...sb.options].some(o=>o.value===old))sb.value=old;let branch=sb.value,q=(document.getElementById('currentStockProduct').value||'').toLowerCase(),data={};get('moves').forEach(x=>{let b=x.branch||'UNASSIGNED',p=x.product||'',c=x.category||'',key=b+'|'+p+'|'+c,qty=Number(x.qty)||0;if(!data[key])data[key]={branch:b,product:p,category:c,stock:0};data[key].stock+=x.direction==='IN'?qty:-qty});let list=Object.values(data).filter(x=>(!branch||x.branch===branch)&&(!q||x.product.toLowerCase().includes(q))).sort((a,b)=>a.branch.localeCompare(b.branch)||a.product.localeCompare(b.product));rows.innerHTML=list.map(x=>`<tr><td>${x.branch}</td><td>${x.product}</td><td>${x.category}</td><td><b>${x.stock}</b></td></tr>`).join('')||'<tr><td colspan="4">No stock records found.</td></tr>';if(kpis){let total=list.reduce((n,x)=>n+x.stock,0);kpis.innerHTML=`<div class="kpi"><b>${list.length}</b><br>Products</div><div class="kpi"><b>${total}</b><br>Total Current Stock</div>`}}function clearCurrentStockFilters(){document.getElementById('currentStockBranch').value='';document.getElementById('currentStockProduct').value='';renderCurrentStock()}function renderSalesExpenseSummary(){let sb=document.getElementById('sumBranch'),rows=document.getElementById('salesExpenseRows'),kpis=document.getElementById('salesExpenseKpis');if(!sb||!rows||!kpis)return;let old=sb.value;sb.innerHTML='<option value="">All branches</option>'+branchListData().map(x=>`<option>${x}</option>`).join('');if([...sb.options].some(o=>o.value===old))sb.value=old;let branch=sb.value,from=document.getElementById('sumFrom').value,to=document.getElementById('sumTo').value,inRange=d=>(!from||d>=from)&&(!to||d<=to),allMoves=get('moves'),allExpenses=get('branchExpenses');let moves=allMoves.map((x,i)=>({x,i})).filter(o=>o.x.movement==='SOLD'&&(!branch||o.x.branch===branch)&&inRange(o.x.date||''));let expenses=allExpenses.map((x,i)=>({x,i})).filter(o=>(!branch||o.x.branch===branch)&&inRange(o.x.date||''));let sales=moves.reduce((n,o)=>n+(Number(o.x.amount)||0),0),exp=expenses.reduce((n,o)=>n+(Number(o.x.amount)||0),0);kpis.innerHTML=`<div class="kpi"><b>${sales.toFixed(2)}</b><br>Total Sales</div><div class="kpi"><b>${exp.toFixed(2)}</b><br>Total Expenses</div>`;let list=[];moves.forEach(o=>list.push({kind:'sale',index:o.i,date:o.x.date||'',branch:o.x.branch||'UNASSIGNED',sales:Number(o.x.amount)||0,expenses:0,description:(o.x.product||'Sale')+(o.x.notes?' - '+o.x.notes:'')}));expenses.forEach(o=>list.push({kind:'expense',index:o.i,date:o.x.date||'',branch:o.x.branch||'UNASSIGNED',sales:0,expenses:Number(o.x.amount)||0,description:(o.x.description||'Expense')+(o.x.notes?' - '+o.x.notes:'')}));list.sort((a,b)=>b.date.localeCompare(a.date)||a.branch.localeCompare(b.branch));rows.innerHTML=list.map(x=>`<tr><td>${x.date}</td><td>${x.branch}</td><td>${x.sales?x.sales.toFixed(2):''}</td><td>${x.expenses?x.expenses.toFixed(2):''}</td><td>${x.description}</td><td><button class="out" onclick="deleteSalesExpenseEntry('${x.kind}',${x.index})">Delete</button></td></tr>`).join('')||'<tr><td colspan="6">No sales or expenses found.</td></tr>'}function deleteSalesExpenseEntry(kind,index){if(!isAdmin()){alert('Admin access required.');return}if(!confirm('Delete this '+(kind==='sale'?'sales transaction':'expense entry')+'? This action cannot be undone.'))return;let key=kind==='sale'?'moves':'branchExpenses',a=get(key);if(index<0||index>=a.length){alert('Entry could not be found.');return}a.splice(index,1);put(key,a);render();alert('Entry successfully deleted.')}function clearSalesExpenseFilters(){document.getElementById('sumBranch').value='';document.getElementById('sumFrom').value='';document.getElementById('sumTo').value='';renderSalesExpenseSummary()}function render(){renderBranches();renderCurrentStock();renderSalesExpenseSummary();renderBranchStockFilters();let fb=document.getElementById('fbranch');if(fb){let old=fb.value;fb.innerHTML='<option value="">All branches</option>'+branchListData().map(x=>`<option>${x}</option>`).join('');fb.value=old}renderInventorySummary();if(window.accounts){accounts.innerHTML=get('employees').map((e,i)=>`<tr><td>${e.name}</td><td>${e.username}</td><td>${e.branch||'UNASSIGNED'}</td><td><button class="out" onclick="deleteEmployee(${i})">Delete</button></td></tr>`).join('')}if(window.startTime)startTime.value=workStart();let a=filtered();rows.innerHTML=a.map(x=>`<tr><td>${x.employee}</td><td>${x.branch||'UNASSIGNED'}</td><td>${x.date}</td><td>${x.time}</td><td>${x.type}</td><td>${status(x)}</td></tr>`).reverse().join('');if(window.report){let names=new Set(a.map(x=>x.employee));let ins=a.filter(x=>x.type==='IN').length,outs=a.filter(x=>x.type==='OUT').length,lates=a.filter(x=>status(x)==='Late').length;report.innerHTML=`<div class="kpi"><b>${names.size}</b><br>Employees</div><div class="kpi"><b>${ins}</b><br>Time Ins</div><div class="kpi"><b>${outs}</b><br>Time Outs</div><div class="kpi"><b>${lates}</b><br>Late</div><div class="kpi"><b>${a.length}</b><br>Total Records</div><p><small><b>Absent:</b> Absence requires an employee roster and scheduled workdays. It will be calculated in the shared online version once schedules are configured.</small></p>`}moves.innerHTML=get('moves').map((x,i)=>({x,i})).reverse().map(o=>`<tr><td>${o.x.date}</td><td>${o.x.branch||'UNASSIGNED'}</td><td>${o.x.product}</td><td>${o.x.movement}</td><td>${o.x.direction}</td><td>${o.x.qty}</td><td><button class="out" onclick="deleteMovement(${o.i})">Delete</button></td></tr>`).join('')}function clearFilters(){femp.value='';fdate.value='';ftype.value='';fstatus.value='';render()}function exportCSV(){let a=filtered(),s='Employee,Date,Time,Type,Status\n'+a.map(x=>[x.employee,x.date,x.time,x.type,status(x)].map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');let b=new Blob([s],{type:'text/csv'}),u=URL.createObjectURL(b),l=document.createElement('a');l.href=u;l.download='attendance.csv';l.click()}function deleteMovement(i){if(!isAdmin()){alert('Admin access required.');return}let a=get('moves');if(confirm('Delete this movement record?')){a.splice(i,1);put('moves',a);render()}}function addMovement(){if(!isAdmin()){alert('Admin access required.');return}let productValue=document.getElementById('product').value,categoryValue=document.getElementById('category').value,dateValue=document.getElementById('movementDate').value,branchValue=document.getElementById('movementBranch').value;if(!dateValue){alert('Please select the movement date.');return}if(!branchValue||!categoryValue||!productValue){alert('Please select branch, category and product.');return}let a=get('moves');a.push({date:dateValue,branch:branchValue,employee:'ADMIN',product:productValue,category:categoryValue,movement:document.getElementById('movement').value,direction:document.getElementById('direction').value,qty:document.getElementById('qty').value,notes:document.getElementById('notes').value});put('moves',a);render()}function clearFilters(){femp.value='';fdate.value='';ftype.value='';render()}function exportCSV(){let a=filtered(),s='Employee,Date,Time,Type\n'+a.map(x=>[x.employee,x.date,x.time,x.type].map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');let b=new Blob([s],{type:'text/csv'}),u=URL.createObjectURL(b),l=document.createElement('a');l.href=u;l.download='attendance.csv';l.click()}if(isAdmin()){stockNav.classList.remove('hidden');document.getElementById('currentStockNav').classList.remove('hidden');document.getElementById('summaryNav').classList.remove('hidden');logoutBtn.classList.remove('hidden')}branchListData();renderBranches();renderBranchLoginOptions();syncEmployeeUI();initMovementDate();updateProductDropdown();renderCustomProducts();render()</script><script>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stock Inventory, Sales & Branch Management</title>
+<style>
+:root{--navy:#274c77;--blue:#457b9d;--teal:#2a9d8f;--red:#e76f51;--purple:#7b2cbf;--gold:#f4a261;--ink:#172033;--line:#dfe5ee;--bg:#f5f7fb}
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:var(--bg);color:var(--ink)}
+header{background:var(--navy);color:#fff;padding:20px}header h2{margin:0 0 4px}header small{opacity:.9}
+main{max-width:1180px;margin:auto;padding:18px}.card{background:#fff;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 2px 10px #0001}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}button{background:var(--teal);color:#fff;border:0;border-radius:9px;padding:11px 15px;margin:3px;font-weight:700;cursor:pointer}button:hover{filter:brightness(.96)}button.out{background:var(--red)}button.secondary{background:var(--blue)}
+input,select{padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin:4px;background:#fff;color:var(--ink)}label{font-weight:600;margin-right:5px}
+.hidden{display:none!important}.clean-branch-pane{display:none}.clean-branch-pane.active{display:block}.branch-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.branch-tab-btn{background:#fff;color:var(--ink);border:1px solid #ccd3df}.branch-tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.clean-box{background:#f8fafc;padding:15px;border-radius:11px;margin:12px 0}.swap-box{background:#f3edff;padding:15px;border-radius:11px}.expense-box{background:#fff7df}.restock-request-box{background:#eef6ff;border:1px solid #c8ddf3;padding:18px;border-radius:12px;color:var(--ink)}.restock-request-box h4,.restock-request-box p,.restock-request-box label{color:var(--ink)}
+.clean-filter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.clean-filter label{display:flex;align-items:center;gap:4px}.clean-table{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px;border-bottom:1px solid #e8edf3;text-align:left;vertical-align:top}th{background:#f8fafc}
+.kpi{display:inline-block;margin:5px;padding:12px;background:#e8f2ff;border-radius:10px}.clean-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.clean-kpis .kpi{display:block;margin:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.muted{color:#667085}.info-box{background:#f7f9fc;padding:12px;border-radius:10px}.restock-readonly{background:#fff8e8;border:1px solid #f0c36d;padding:14px;border-radius:10px;margin-top:12px}
+.status-badge{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:700;color:#fff}.status-badge.pending{background:#f4a261}.status-badge.approved{background:#2a9d8f}.status-badge.rejected{background:#e76f51}
+.mv-badge{display:inline-block;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}.mv-sold{background:#2a9d8f}.mv-freebies{background:#457b9d}.mv-pull-out{background:#e76f51}.mv-transferred{background:#f4a261}.mv-swap{background:#7b2cbf}.mv-restock{background:#274c77}.mv-back-job{background:#6c5ce7}.mv-from-gift-box{background:#8d6e63}
+.stock-zero{background:#ffe5e5}.stock-low{background:#fff1d6}.stock-ok{background:#eaf7ee}
+.notice{padding:12px;border-radius:10px;background:#eef6ff;border:1px solid #c8ddf3}.toolbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+@media(max-width:700px){main{padding:10px}.card{padding:13px}header{padding:15px}input,select,button{max-width:100%}table{font-size:13px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header><h2>Stock Inventory, Sales & Branch Management</h2><small>Shared branch inventory and sales system</small></header>
+<main>
+<nav>
+<button onclick="openAdmin()">Admin</button>
+<button onclick="openBranchLogin()">Branch Login</button>
+<button id="stockNav" class="hidden secondary" onclick="show('stock')">Stock Movements</button>
+<button id="currentStockNav" class="hidden secondary" onclick="show('currentStock')">Current Stock Tracker</button>
+<button id="summaryNav" class="hidden secondary" onclick="show('salesExpenseSummary')">Sales & Expenses</button>
+<button id="logoutBtn" class="hidden out" onclick="adminLogout()">Admin Logout</button>
+</nav>
+<div id="adminLogin" class="card hidden">
+<h3>Admin Login</h3>
+<input id="adminEmail" type="email" placeholder="Admin Email">
+<input id="adminPass" type="password" placeholder="Admin Password">
+<button type="button" onclick="togglePassword('adminPass',this)">Show</button>
+<button onclick="adminLogin()">Login</button><p id="loginMsg"></p>
+<small>Use your Supabase Admin email and password.</small>
+</div>
+<div id="branchLogin" class="card hidden">
+<h3>Branch Login</h3>
+<input id="branchUser" type="email" placeholder="Branch Email">
+<input id="branchPass" type="password" placeholder="Branch Password">
+<button type="button" onclick="togglePassword('branchPass',this)">Show</button>
+<button onclick="doBranchLogin()">Login</button><p id="branchLoginMsg"></p>
+<small>Use the Supabase branch email and password.</small>
+</div>
+<section id="branchPanel" class="card hidden">
+<h3>Branch Workspace</h3>
+<p>Logged in branch: <b id="branchPanelName"></b></p>
+<div class="branch-tabs">
+<button class="branch-tab-btn active" onclick="cleanBranchTab('dashboard',this)">DASHBOARD</button>
+<button class="branch-tab-btn" onclick="cleanBranchTab('movement',this)">Branch Stock Movement</button>
+<button class="branch-tab-btn" onclick="cleanBranchTab('swap',this)">Clear Case Swap</button>
+<button class="branch-tab-btn" onclick="cleanBranchTab('expenses',this)">Branch Related Expenses</button>
+<button class="branch-tab-btn" onclick="cleanBranchTab('restock',this)">Restock Request</button>
+</div>
+
+<div id="clean-dashboard" class="clean-branch-pane active">
+<div class="notice"><b>Branch transaction history</b> — only transactions belonging to your authenticated Branch are shown.</div>
+<div class="clean-filter">
+<select id="dashboardCategory" onchange="renderBranchDashboard()"><option value="">All categories</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select>
+<select id="dashboardMovement" onchange="renderBranchDashboard()"><option value="">All movements</option><option>RESTOCK</option><option>SOLD</option><option>FREEBIES</option><option>TRANSFERRED</option><option>PULL OUT</option><option>BACK JOB</option><option>FROM GIFT BOX</option><option>SWAP</option></select>
+<label>From: <input id="dashboardFrom" type="date" onchange="renderBranchDashboard()"></label>
+<label>To: <input id="dashboardTo" type="date" onchange="renderBranchDashboard()"></label>
+<button onclick="clearDashboardFilters()">Clear Filters</button>
+</div>
+<div id="dashboardCount" class="kpi">0 matching transactions</div>
+<div class="clean-table"><table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Movement</th><th>Direction</th><th>Quantity</th><th>Amount</th><th>Payment</th><th>Notes</th></tr></thead><tbody id="dashboardRows"></tbody></table></div>
+</div>
+
+<div id="clean-movement" class="clean-branch-pane">
+<div class="clean-box">
+<h4>Branch Stock Movement</h4>
+<div id="branchMovementEntryFields">
+<label>Date: <input id="branchMovementDate" type="date"></label>
+<select id="branchMoveCategory" onchange="updateBranchProducts(this.value)"><option value="">Select Category</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select>
+<select id="branchMoveProduct"><option value="">Select Product</option></select>
+<select id="branchMovement" onchange="toggleBackJobDirection()">
+<option>SOLD</option><option>TRANSFERRED</option><option>PULL OUT</option><option>FREEBIES</option><option>BACK JOB</option><option>RESTOCK</option>
+</select>
+<select id="branchBackJobDirection" class="hidden"><option>IN</option><option>OUT</option></select>
+<input id="branchMoveQty" type="number" min="1" value="1" placeholder="Quantity">
+<input id="branchAmount" type="number" min="0" step="0.01" placeholder="Amount">
+<input id="branchDownpayment" type="number" min="0" step="0.01" placeholder="Downpayment">
+<input id="branchPaymentMethod" placeholder="Payment Method">
+<input id="branchMoveNotes" placeholder="Notes">
+<button id="saveBranchMovementBtn" onclick="saveBranchMovement()">Save Branch Movement</button>
+<p id="branchMoveMsg"></p>
+</div>
+<div id="branchMovementReadOnly" class="restock-readonly hidden">
+<h4>RESTOCK — VIEW ONLY</h4>
+<p>RESTOCK is created through Admin approval. Branch users may view approved RESTOCK transactions for verification only.</p>
+<div id="branchApprovedRestocks"></div>
+</div>
+</div>
+<h4>Branch Stock Movement History</h4>
+<div class="clean-filter">
+<select id="bmCategory" onchange="renderBMHistory()"><option value="">All categories</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select>
+<label>From: <input id="bmFrom" type="date" onchange="renderBMHistory()"></label>
+<label>To: <input id="bmTo" type="date" onchange="renderBMHistory()"></label>
+<button onclick="clearBranchHistoryFilters()">Clear Filters</button>
+</div>
+<div class="clean-table"><table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Movement</th><th>Direction</th><th>Quantity</th><th>Amount</th></tr></thead><tbody id="bmRows"></tbody></table></div>
+</div>
+
+<div id="clean-swap" class="clean-branch-pane">
+<div class="swap-box"><h4>Clear Case Swap</h4>
+<label>Date: <input id="swapDate" type="date"></label>
+<select id="swapFromCase"><option value="">Case Removed</option></select><span> → </span>
+<select id="swapToCase"><option value="">Case Added</option></select>
+<input id="swapQty" type="number" min="1" value="1" placeholder="Quantity">
+<input id="swapNotes" placeholder="Reason / Notes">
+<button onclick="saveClearCaseSwap()">Save Clear Case Swap</button><p id="swapMsg"></p>
+</div>
+<div class="clean-table"><table><thead><tr><th>Date</th><th>Product</th><th>Direction</th><th>Quantity</th><th>Notes</th></tr></thead><tbody id="swapRows"></tbody></table></div>
+</div>
+
+<div id="clean-expenses" class="clean-branch-pane">
+<div class="clean-box expense-box"><h4>Branch Related Expenses</h4>
+<label>Date: <input id="expenseDate" type="date"></label>
+<input id="expenseDescription" placeholder="Expense Description">
+<input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount">
+<input id="expenseNotes" placeholder="Expense Notes">
+<button onclick="saveBranchExpense()">Save Expense</button><p id="expenseMsg"></p>
+</div>
+<div class="clean-filter"><label>From: <input id="beFrom" type="date" onchange="renderBranchExpenses()"></label><label>To: <input id="beTo" type="date" onchange="renderBranchExpenses()"></label><button onclick="beFrom.value=beTo.value='';renderBranchExpenses()">Clear Filters</button></div>
+<div id="branchExpenseList"></div>
+</div>
+
+<div id="clean-restock" class="clean-branch-pane">
+<div class="restock-request-box">
+<h4>RESTOCK REQUEST</h4>
+<p>This prepares a request only. It does not create a RESTOCK stock movement. Inventory will only be updated after Admin approval.</p>
+<label>Date: <input id="restockRequestDate" type="date"></label>
+<select id="restockRequestCategory" onchange="updateRestockRequestProducts(this.value)"><option value="">Select Category</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select>
+<select id="restockRequestProduct"><option value="">Select Product</option></select>
+<input id="restockRequestQty" type="number" min="1" value="1" placeholder="Requested Quantity">
+<input id="restockRequestNotes" placeholder="Reason / Notes">
+<button onclick="prepareRestockRequest()">Prepare Request</button>
+<p id="restockRequestMsg"></p>
+</div>
+<h4>My Restock Requests</h4><div id="myRestockRequests"></div>
+</div>
+<button class="out" onclick="branchLogout()">Branch Logout</button>
+</section>
+<section id="admin" class="card hidden">
+<h3>Admin Management Dashboard</h3>
+<div class="clean-box">
+<h3>RESTOCK APPROVAL</h3>
+<p>Review Branch Restock Requests. Approving creates exactly one RESTOCK / IN inventory movement. Rejecting does not change inventory.</p>
+<div id="restockApprovalCount" class="kpi">0 requests</div>
+<div class="clean-table"><table><thead><tr><th>Request Date</th><th>Branch</th><th>Category</th><th>Product</th><th>Requested Qty</th><th>Reason / Notes</th><th>Status</th><th>Action</th></tr></thead><tbody id="restockApprovalRows"></tbody></table></div>
+</div>
+<div class="toolbar">
+<button onclick="show('stock')">Stock Movements</button>
+<button onclick="show('currentStock')">Current Stock Tracker</button>
+<button onclick="show('salesExpenseSummary')">Sales & Expenses</button>
+</div>
+</section>
+<section class="card hidden" id="stock"><h3>Admin Stock Movement Management</h3><div style="background:#f7f9fc;padding:12px;border-radius:10px;margin:12px 0"><h3>Inventory Report Summary</h3><div><select id="invBranch" onchange="render()"><option value="">All branches</option></select><select id="invCategory" onchange="render()"><option value="">All categories</option></select><input id="invProduct" oninput="render()" placeholder="Filter product"/><select id="invType" onchange="render()"><option value="">All movement types</option><option>RESTOCK</option><option>SOLD</option><option>FREEBIES</option><option>TRANSFERRED</option><option>PULL OUT</option><option>BACK JOB</option><option>FROM GIFT BOX</option><option>SWAP</option></select><select id="invDir" onchange="render()"><option value="">IN &amp; OUT</option><option>IN</option><option>OUT</option></select><label>From: <input id="invFrom" onchange="render()" type="date"/></label><label>To: <input id="invTo" onchange="render()" type="date"/></label><button onclick="clearInventoryFilters()">Clear</button><button onclick="exportInventoryCSV()">Download Report CSV</button></div><div id="inventoryKpis" style="margin:12px 0"></div><table><thead><tr><th>Date</th><th>Branch Name</th><th>Product Name</th><th>Quantity</th><th>Category</th><th>Notes</th><th>Amount</th><th>Action</th></tr></thead><tbody id="inventorySummary"></tbody></table></div><p><b>Admin:</b> Add new movement records below or delete an incorrect movement from the table.</p><p>Select a date, category and product, then enter the movement details.</p><label><b>Movement Date:</b> <input id="movementDate" type="date"/></label><select id="movementBranch"></select><select id="category" onchange="updateProductDropdown(this.value)"><option value="">Select Category</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select><select id="product"><option value="">Select Product</option></select><select id="movement"><option>RESTOCK</option><option>SOLD</option><option>FREEBIES</option><option>TRANSFERRED</option><option>PULL OUT</option><option>BACK JOB</option><option>FROM GIFT BOX</option></select><select id="direction"><option>IN</option><option>OUT</option></select><input id="qty" min="1" type="number" value="1"/><input id="notes" placeholder="Notes"/><button onclick="addMovement()">Save Movement</button><table><thead><tr><th>Date</th><th>Branch</th><th>Product</th><th>Type</th><th>Dir.</th><th>Qty</th><th>Action</th></tr></thead><tbody id="moves"></tbody></table><div class="card" style="background:#f7f9fc"><h3>Transaction Export &amp; Archive</h3><p>Export first. Archive copies records to stock_movements_archive without deleting active stock history, so Current Stock cannot change.</p><label>From: <input id="archiveFrom" type="date"/></label><label>To: <input id="archiveTo" type="date"/></label><select id="archiveBranch"><option value="">All branches</option></select><button onclick="exportArchiveCSV()">Export Transactions CSV</button><button class="out" onclick="archiveTransactionsSafe()">Archive Exported Range</button><p id="archiveMsg"></p></div></section><section class="card hidden" id="currentStock"><h3>Current Stock Tracker</h3><div><select id="currentStockBranch" onchange="renderCurrentStock()"><option value="">All branches</option></select><select id="currentStockCategory" onchange="renderCurrentStock()"><option value="">All categories</option></select><input id="currentStockProduct" oninput="renderCurrentStock()" placeholder="Filter product"/><button onclick="clearCurrentStockFilters()">Clear Filters</button></div><div id="currentStockKpis" style="margin:12px 0"></div><table><thead><tr><th>Branch</th><th>Product</th><th>Category</th><th>Current Stock</th></tr></thead><tbody id="currentStockRows"></tbody></table><div class="card" style="background:#f7f9fc"><h3>Sales for Selected Period</h3><div><select id="salesPeriodBranch" onchange="renderSalesPeriod()"><option value="">All branches</option></select><select id="salesPeriodCategory" onchange="renderSalesPeriod()"><option value="">All categories</option></select><input id="salesPeriodProduct" oninput="renderSalesPeriod()" placeholder="Filter product"/><label>From: <input id="salesPeriodFrom" onchange="renderSalesPeriod()" type="date"/></label><label>To: <input id="salesPeriodTo" onchange="renderSalesPeriod()" type="date"/></label><select id="salesPeriodMonth" onchange="applySalesMonth()"><option value="">Month</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input id="salesPeriodYear" max="2100" min="2020" onchange="applySalesMonth()" placeholder="Year" type="number"/><button onclick="clearSalesPeriodFilters()">Clear Filters</button><button onclick="exportSalesCSV()">Download Sales CSV</button></div><div id="salesPeriodKpis" style="margin:12px 0"></div><h4>Units Sold per Category</h4><table><thead><tr><th>Category</th><th>Units Sold</th></tr></thead><tbody id="salesCategoryRows"></tbody></table><h4>Units Sold per Product</h4><table><thead><tr><th>Branch</th><th>Category</th><th>Product</th><th>Units Sold</th><th>Sales Amount</th></tr></thead><tbody id="salesProductRows"></tbody></table><h4>Top Selling Products</h4><table><thead><tr><th>Rank</th><th>Product</th><th>Category</th><th>Units Sold</th><th>Sales Amount</th></tr></thead><tbody id="topSellingRows"></tbody></table></div></section><section class="card hidden" id="salesExpenseSummary"><h3>Sales and Expenses Summary</h3><select id="sumBranch" onchange="renderSalesExpenseSummary()"><option value="">All branches</option></select><select id="sumCategory" onchange="renderSalesExpenseSummary()"><option value="">All categories</option></select><label>From: <input id="sumFrom" onchange="renderSalesExpenseSummary()" type="date"/></label><label>To: <input id="sumTo" onchange="renderSalesExpenseSummary()" type="date"/></label><button onclick="clearSalesExpenseFilters()">Clear Filters</button><div class="grid" id="salesExpenseKpis"></div><h4>Sales and Expenses Details</h4><table><thead><tr><th>Date</th><th>Branch</th><th>Category</th><th>Product / Description</th><th>Sales</th><th>Downpayment</th><th>Remaining Balance</th><th>Expenses</th><th>Action</th></tr></thead><tbody id="salesExpenseRows"></tbody></table></section></main><script>
 const SUPABASE_URL='https://vxuuzinieabzekcandgv.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_rh6yxIhUHEkBkpyZtqz5pQ_lIHYyAX4';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
-let cloudProfile=null, cloudMoves=[], cloudExpenses=[], cloudAttendance=[];
+let cloudProfile=null, cloudMoves=[], cloudExpenses=[], cloudAttendance=[], cloudRestockRequests=[];
 async function cloudProfileLoad(){
  const {data:{user}}=await sb.auth.getUser(); if(!user){cloudProfile=null;return null;}
  const {data,error}=await sb.from('app_users').select('user_id,role,branch_id,employee_id,enabled').eq('user_id',user.id).single();
@@ -11,8 +178,17 @@ async function cloudProfileLoad(){
 async function cloudBranchName(id){if(!id)return '';const {data}=await sb.from('branches').select('name').eq('id',id).single();return data?.name||'';}
 async function refreshCloud(){
  if(!cloudProfile)return;
- const [m,e,a]=await Promise.all([sb.from('stock_movements').select('*').order('created_at',{ascending:false}),sb.from('branch_expenses').select('*').order('created_at',{ascending:false}),sb.from('attendance').select('*').order('attendance_time',{ascending:false})]);
- cloudMoves=m.data||[];cloudExpenses=e.data||[];cloudAttendance=a.data||[];
+ const requestsQuery=sb.from('restock_requests').select('*').order('created_at',{ascending:false});
+ const [m,e,a,r]=await Promise.all([
+   sb.from('stock_movements').select('*').order('created_at',{ascending:false}),
+   sb.from('branch_expenses').select('*').order('created_at',{ascending:false}),
+   sb.from('attendance').select('*').order('attendance_time',{ascending:false}),
+   requestsQuery
+ ]);
+ cloudMoves=m.data||[];
+ cloudExpenses=e.data||[];
+ cloudAttendance=a.data||[];
+ cloudRestockRequests=r.data||[];
 }
 function isAdmin(){return cloudProfile?.role==='ADMIN'&&cloudProfile?.enabled===true;}
 async function adminLogin(){
@@ -24,38 +200,187 @@ async function adminLogin(){
 async function adminLogout(){await sb.auth.signOut();cloudProfile=null;stockNav.classList.add('hidden');currentStockNav.classList.add('hidden');summaryNav.classList.add('hidden');logoutBtn.classList.add('hidden');openBranchLogin();}
 function openBranchLogin(){document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));document.getElementById('adminLogin').classList.add('hidden');document.getElementById('branchLogin').classList.remove('hidden');}
 async function doBranchLogin(){
- branchLoginMsg.textContent='Signing in...';const email=branchUser.value.trim(),password=branchPass.value;
- const {error}=await sb.auth.signInWithPassword({email,password});if(error){branchLoginMsg.textContent=error.message;return;}
- try{await cloudProfileLoad();if(cloudProfile?.role!=='BRANCH'||!cloudProfile.enabled){await sb.auth.signOut();cloudProfile=null;branchLoginMsg.textContent='This account is not an enabled BRANCH account.';return;}let branch=await cloudBranchName(cloudProfile.branch_id);sessionStorage.setItem('branchSession',branch);await refreshCloud();branchLogin.classList.add('hidden');branchPanel.classList.remove('hidden');branchPanelName.textContent=branch;initBranchMovementDate();updateBranchProducts('');initExpenseDate();initSwapUI();renderBranchHistory();renderBranchExpenses();}catch(e){branchLoginMsg.textContent=e.message;}
+ branchLoginMsg.textContent='Signing in...';
+ const email=branchUser.value.trim(),password=branchPass.value;
+ const {error}=await sb.auth.signInWithPassword({email,password});
+ if(error){branchLoginMsg.textContent=error.message;return;}
+ try{
+   await cloudProfileLoad();
+   if(cloudProfile?.role!=='BRANCH'||!cloudProfile.enabled){
+     await sb.auth.signOut();cloudProfile=null;
+     branchLoginMsg.textContent='This account is not an enabled BRANCH account.';
+     return;
+   }
+   const branch=await cloudBranchName(cloudProfile.branch_id);
+   sessionStorage.setItem('branchSession',branch);
+   await refreshCloud();
+   branchLogin.classList.add('hidden');
+   branchPanel.classList.remove('hidden');
+   branchPanelName.textContent=branch;
+   initBranchMovementDate();
+   initExpenseDate();
+   initRestockRequestDate();
+   initSwapUI();
+   updateBranchProducts('');
+   cleanBranchTab('dashboard',document.querySelector('.branch-tab-btn'));
+ }catch(e){branchLoginMsg.textContent=e.message;}
 }
 async function branchLogout(){await sb.auth.signOut();cloudProfile=null;sessionStorage.removeItem('branchSession');branchPanel.classList.add('hidden');branchLogin.classList.remove('hidden');}
-function toggleBackJobDirection(){let e=document.getElementById('branchBackJobDirection');if(!e)return;e.classList.toggle('hidden',document.getElementById('branchMovement').value!=='BACK JOB');}
-async function saveBranchMovement(){
- if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');let type=branchMovement.value,allowed=['SOLD','TRANSFERRED','PULL OUT','FREEBIES','BACK JOB'];if(!allowed.includes(type))return alert('Movement not allowed.');
- let date=branchMovementDate.value,category=branchMoveCategory.value,product=branchMoveProduct.value,qty=Number(branchMoveQty.value),amount=Number(branchAmount.value||0),payment_method=branchPaymentMethod.value.trim(),notes=branchMoveNotes.value.trim(),branch_name=branchPanelName.textContent,directionValue=type==='BACK JOB'?branchBackJobDirection.value:'OUT';
- if(!date||!category||!product||!qty)return alert('Please complete date, category, product, and quantity.');if(type==='BACK JOB'&&directionValue==='OUT'){let available=cloudMoves.filter(x=>x.branch_name===branch_name&&x.product===product&&x.category===category).reduce((n,x)=>n+(x.direction==='IN'?Number(x.quantity||0):-Number(x.quantity||0)),0);if(qty>available)return alert('INSUFFICIENT STOCK\nAvailable: '+available+' pcs\nRequested OUT: '+qty+' pcs');}
- if(!confirm('Do you want to add this transaction?'))return;
- const {error}=await sb.from('stock_movements').insert({branch_id:cloudProfile.branch_id,branch_name,employee_name:'BRANCH LOGIN',movement_date:date,category,product,movement:type,direction:directionValue,quantity:qty,amount,payment_method,notes});if(error)return alert(error.message);await refreshCloud();renderBranchHistory();alert('Transaction successfully entered.');render();
-}
+
+
 async function saveBranchExpense(){
  if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');let expense_date=expenseDate.value,description=expenseDescription.value.trim(),amount=Number(expenseAmount.value),notes=expenseNotes.value.trim(),branch_name=branchPanelName.textContent;if(!expense_date||!description||Number.isNaN(amount))return alert('Please complete date, expense description, and amount.');
  const {error}=await sb.from('branch_expenses').insert({branch_id:cloudProfile.branch_id,branch_name,expense_date,description,amount,notes});if(error)return alert(error.message);expenseDescription.value='';expenseAmount.value='';expenseNotes.value='';await refreshCloud();renderBranchExpenses();render();alert('Expense successfully entered.');
 }
-function renderBranchExpenses(){let box=document.getElementById('branchExpenseList'),branch=sessionStorage.getItem('branchSession');if(!box||!branch)return;let a=cloudExpenses.filter(x=>x.branch_name===branch);box.innerHTML=a.length?'<table><thead><tr><th>Date</th><th>Expense</th><th>Amount</th><th>Notes</th></tr></thead><tbody>'+a.map(x=>`<tr><td>${x.expense_date}</td><td>${x.description}</td><td>${x.amount}</td><td>${x.notes||''}</td></tr>`).join('')+'</tbody></table>':'<small>No branch expenses recorded yet.</small>';}
+
 async function addMovement(){
  if(!isAdmin())return alert('Admin access required.');let productValue=product.value,categoryValue=category.value,dateValue=movementDate.value,branchValue=movementBranch.value;if(!dateValue||!branchValue||!categoryValue||!productValue)return alert('Please select date, branch, category and product.');
  let {data:b,error:be}=await sb.from('branches').select('id,name').eq('name',branchValue).single();if(be)return alert(be.message);let movementValue=movement.value,directionValue=direction.value;
  const {error}=await sb.from('stock_movements').insert({branch_id:b.id,branch_name:b.name,employee_name:'ADMIN',movement_date:dateValue,product:productValue,category:categoryValue,movement:movementValue,direction:directionValue,quantity:Number(qty.value),notes:notes.value,amount:0});if(error)return alert(error.message);await refreshCloud();render();
 }
 async function deleteMovementById(id){if(!isAdmin())return alert('Admin access required.');let x=cloudMoves.find(v=>String(v.id)===String(id));let detail=x?'Date: '+x.movement_date+'\nBranch: '+x.branch_name+'\nCategory: '+x.category+'\nProduct: '+x.product+'\nMovement: '+x.movement+'\nDirection: '+x.direction+'\nQuantity: '+x.quantity:'';if(!confirm('Delete this movement record?\n\n'+detail))return;const {error}=await sb.from('stock_movements').delete().eq('id',id);if(error)return alert(error.message);await refreshCloud();render();}
-function filteredMoves(){let b=invBranch?.value||'',p=(invProduct?.value||'').toLowerCase(),t=invType?.value||'',d=invDir?.value||'',from=document.getElementById('invFrom')?.value||'',to=document.getElementById('invTo')?.value||'';return cloudMoves.filter(x=>(!b||x.branch_name===b)&&(!p||(x.product||'').toLowerCase().includes(p))&&(!t||x.movement===t)&&(!d||x.direction===d)&&(!from||(x.movement_date||'')>=from)&&(!to||(x.movement_date||'')<=to)).map(x=>({date:x.movement_date,branch:x.branch_name,product:x.product,category:x.category,movement:x.movement,direction:x.direction,qty:x.quantity,amount:x.amount,notes:x.notes,id:x.id}));}
-function renderCurrentStock(){let sbx=currentStockBranch,rows=currentStockRows,kpis=currentStockKpis;if(!sbx||!rows)return;let old=sbx.value,names=[...new Set(cloudMoves.map(x=>x.branch_name))];sbx.innerHTML='<option value="">All branches</option>'+names.map(x=>`<option>${x}</option>`).join('');if([...sbx.options].some(o=>o.value===old))sbx.value=old;let branch=sbx.value,q=(currentStockProduct.value||'').toLowerCase(),data={};cloudMoves.forEach(x=>{let key=x.branch_name+'|'+x.product+'|'+x.category;if(!data[key])data[key]={branch:x.branch_name,product:x.product,category:x.category,stock:0};data[key].stock+=x.direction==='IN'?Number(x.quantity):-Number(x.quantity)});let list=Object.values(data).filter(x=>(!branch||x.branch===branch)&&(!q||x.product.toLowerCase().includes(q)));rows.innerHTML=list.map(x=>`<tr><td>${x.branch}</td><td>${x.product}</td><td>${x.category}</td><td><b>${x.stock}</b></td></tr>`).join('')||'<tr><td colspan="4">No stock records found.</td></tr>';kpis.innerHTML=`<div class="kpi"><b>${list.length}</b><br>Products</div><div class="kpi"><b>${list.reduce((n,x)=>n+x.stock,0)}</b><br>Total Current Stock</div>`;}
-function renderSalesExpenseSummary(){let rows=salesExpenseRows,kpis=salesExpenseKpis;if(!rows||!kpis)return;let branch=sumBranch.value,from=sumFrom.value,to=sumTo.value,inRange=d=>(!from||d>=from)&&(!to||d<=to);let sales=cloudMoves.filter(x=>x.movement==='SOLD'&&(!branch||x.branch_name===branch)&&inRange(x.movement_date));let ex=cloudExpenses.filter(x=>(!branch||x.branch_name===branch)&&inRange(x.expense_date));let st=sales.reduce((n,x)=>n+Number(x.amount||0),0),et=ex.reduce((n,x)=>n+Number(x.amount||0),0);kpis.innerHTML=`<div class="kpi"><b>${st.toFixed(2)}</b><br>Total Sales</div><div class="kpi"><b>${et.toFixed(2)}</b><br>Total Expenses</div>`;let list=[...sales.map(x=>({kind:'sale',id:x.id,date:x.movement_date,branch:x.branch_name,sales:Number(x.amount||0),expenses:0,description:x.product||'Sale'})),...ex.map(x=>({kind:'expense',id:x.id,date:x.expense_date,branch:x.branch_name,sales:0,expenses:Number(x.amount||0),description:x.description||'Expense'}))].sort((a,b)=>b.date.localeCompare(a.date));rows.innerHTML=list.map(x=>`<tr><td>${x.date}</td><td>${x.branch}</td><td>${x.sales?x.sales.toFixed(2):''}</td><td>${x.expenses?x.expenses.toFixed(2):''}</td><td>${x.description}</td><td>${isAdmin()?`<button class="out" onclick="deleteCloudSalesExpense('${x.kind}','${x.id}')">Delete</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6">No sales or expenses found.</td></tr>';}
+
+
+
 async function deleteCloudSalesExpense(kind,id){if(!isAdmin())return alert('Admin access required.');let label=kind==='sale'?'sales transaction':'expense entry';if(!confirm('Delete this '+label+' permanently? This action cannot be undone.'))return;let table=kind==='sale'?'stock_movements':'branch_expenses';const {error}=await sb.from(table).delete().eq('id',id);if(error)return alert(error.message);await refreshCloud();render();alert('Entry successfully deleted.');}
-function initSwapUI(){let d=document.getElementById('swapDate');if(d&&!d.value){let x=new Date();d.value=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')}let cases=allProductsByCategory('CLEAR CASE');['swapFromCase','swapToCase'].forEach(id=>{let e=document.getElementById(id);if(!e)return;let old=e.value;e.innerHTML='<option value="">'+(id==='swapFromCase'?'Case Removed':'Case Added')+'</option>'+cases.map(x=>`<option>${x}</option>`).join('');if(cases.includes(old))e.value=old})}
-function movementBadge(v){let cls='mv-'+String(v||'').toLowerCase().replaceAll(' ','-');return `<span class="mv-badge ${cls}">${v||''}</span>`}
-function clearBranchHistoryFilters(){['bhFrom','bhTo','bhProduct'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=''});['bhCategory','bhMovement'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=''});renderBranchHistory()}
-function renderBranchHistory(){let body=document.getElementById('branchHistoryRows'),count=document.getElementById('branchHistoryCount');if(!body)return;let branch=sessionStorage.getItem('branchSession');if(!branch){body.innerHTML='<tr><td colspan="9">Branch login required.</td></tr>';return}let from=document.getElementById('bhFrom')?.value||'',to=document.getElementById('bhTo')?.value||'',cat=document.getElementById('bhCategory')?.value||'',prod=(document.getElementById('bhProduct')?.value||'').toLowerCase(),mov=document.getElementById('bhMovement')?.value||'';let a=cloudMoves.filter(x=>x.branch_name===branch&&(!from||(x.movement_date||'')>=from)&&(!to||(x.movement_date||'')<=to)&&(!cat||x.category===cat)&&(!prod||(x.product||'').toLowerCase().includes(prod))&&(!mov||x.movement===mov)).sort((a,b)=>(b.movement_date||'').localeCompare(a.movement_date||'')||(b.created_at||'').localeCompare(a.created_at||''));if(count)count.innerHTML=`<b>${a.length}</b><br>Transactions`;body.innerHTML=a.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${movementBadge(x.movement)}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td>${Number(x.amount||0).toFixed(2)}</td><td>${x.payment_method||''}</td><td>${x.notes||''}</td></tr>`).join('')||'<tr><td colspan="9">No matching branch transactions found.</td></tr>'}
+
+function movementBadge(v){
+ const cls='mv-'+String(v||'').toLowerCase().replaceAll(' ','-');
+ return `<span class="mv-badge ${cls}">${v||''}</span>`;
+}
+function branchOnlyMoves(){
+ const branch=sessionStorage.getItem('branchSession');
+ return cloudMoves.filter(x=>x.branch_name===branch);
+}
+function renderBranchDashboard(){
+ const body=document.getElementById('dashboardRows'),count=document.getElementById('dashboardCount');
+ if(!body)return;
+ const branch=sessionStorage.getItem('branchSession');
+ if(!branch){body.innerHTML='<tr><td colspan="9">Branch login required.</td></tr>';return;}
+ const from=document.getElementById('dashboardFrom')?.value||'';
+ const to=document.getElementById('dashboardTo')?.value||'';
+ const cat=document.getElementById('dashboardCategory')?.value||'';
+ const mov=document.getElementById('dashboardMovement')?.value||'';
+ const data=branchOnlyMoves().filter(x=>
+   (!from||(x.movement_date||'')>=from)&&(!to||(x.movement_date||'')<=to)&&(!cat||x.category===cat)&&(!mov||x.movement===mov)
+ ).sort((a,b)=>(b.movement_date||'').localeCompare(a.movement_date||'')||(b.created_at||'').localeCompare(a.created_at||''));
+ count.textContent=data.length+' matching transaction'+(data.length===1?'':'s');
+ body.innerHTML=data.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${movementBadge(x.movement)}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td>${Number(x.amount||0).toFixed(2)}</td><td>${x.payment_method||''}</td><td>${cleanMovementNotes(x.notes)}</td></tr>`).join('')||'<tr><td colspan="9">No matching transactions found.</td></tr>';
+}
+function clearDashboardFilters(){
+ dashboardCategory.value='';dashboardMovement.value='';dashboardFrom.value='';dashboardTo.value='';renderBranchDashboard();
+}
+function clearBranchHistoryFilters(){
+ bmCategory.value='';bmFrom.value='';bmTo.value='';renderBMHistory();
+}
+function renderBMHistory(){
+ const body=document.getElementById('bmRows');
+ if(!body)return;
+ const branch=sessionStorage.getItem('branchSession');
+ if(!branch){body.innerHTML='<tr><td colspan="7">Branch login required.</td></tr>';return;}
+ const c=bmCategory.value||'',f=bmFrom.value||'',t=bmTo.value||'';
+ const data=branchOnlyMoves().filter(x=>x.movement!=='SWAP'&&(!c||x.category===c)&&(!f||x.movement_date>=f)&&(!t||x.movement_date<=t))
+   .sort((a,b)=>(b.movement_date||'').localeCompare(a.movement_date||'')||(b.created_at||'').localeCompare(a.created_at||''));
+ body.innerHTML=data.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${movementBadge(x.movement)}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td>${Number(x.amount||0).toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="7">No matching stock movements.</td></tr>';
+}
+function renderSwapOnly(){
+ const body=document.getElementById('swapRows');if(!body)return;
+ const data=branchOnlyMoves().filter(x=>x.movement==='SWAP').sort((a,b)=>(b.movement_date||'').localeCompare(a.movement_date||''));
+ body.innerHTML=data.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.product||''}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td>${cleanMovementNotes(x.notes)}</td></tr>`).join('')||'<tr><td colspan="5">No clear case swap transactions.</td></tr>';
+}
+function renderBranchExpenses(){
+ const box=document.getElementById('branchExpenseList'),branch=sessionStorage.getItem('branchSession');
+ if(!box||!branch)return;
+ const f=document.getElementById('beFrom')?.value||'',t=document.getElementById('beTo')?.value||'';
+ const data=cloudExpenses.filter(x=>x.branch_name===branch&&(!f||x.expense_date>=f)&&(!t||x.expense_date<=t))
+   .sort((a,b)=>(b.expense_date||'').localeCompare(a.expense_date||''));
+ box.innerHTML=data.length?'<table><thead><tr><th>Date</th><th>Expense</th><th>Amount</th><th>Notes</th></tr></thead><tbody>'+
+ data.map(x=>`<tr><td>${x.expense_date}</td><td>${x.description||''}</td><td>${Number(x.amount||0).toFixed(2)}</td><td>${x.notes||''}</td></tr>`).join('')+
+ '</tbody></table>':'<small>No matching branch expenses.</small>';
+}
+function initRestockRequestDate(){
+ const e=document.getElementById('restockRequestDate');
+ if(e&&!e.value){const d=new Date();e.value=d.toISOString().slice(0,10);}
+}
+function updateRestockRequestProducts(category){
+ const p=document.getElementById('restockRequestProduct');if(!p)return;
+ const list=category?allProductsByCategory(category):[];
+ p.innerHTML='<option value="">Select Product</option>'+[...new Set(list)].map(x=>`<option>${x}</option>`).join('');
+}
+function renderApprovedRestocks(){
+ const box=document.getElementById('branchApprovedRestocks');if(!box)return;
+ const branch=sessionStorage.getItem('branchSession');
+ const data=cloudRestockRequests.filter(x=>x.branch_name===branch&&x.status==='APPROVED')
+   .sort((a,b)=>(b.request_date||'').localeCompare(a.request_date||''));
+ box.innerHTML=data.length?'<table><thead><tr><th>Approved Date</th><th>Category</th><th>Product</th><th>Quantity</th><th>Status</th></tr></thead><tbody>'+
+ data.map(x=>`<tr><td>${x.request_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${x.requested_quantity||''}</td><td><span class="status-badge approved">APPROVED</span></td></tr>`).join('')+
+ '</tbody></table>':'<small>No approved RESTOCK transactions yet.</small>';
+}
+function cleanBranchTab(name,btn){
+ document.querySelectorAll('.clean-branch-pane').forEach(x=>x.classList.remove('active'));
+ document.querySelectorAll('.branch-tab-btn').forEach(x=>x.classList.remove('active'));
+ const pane=document.getElementById('clean-'+name);
+ if(pane)pane.classList.add('active');
+ if(btn)btn.classList.add('active');
+ if(name==='dashboard')renderBranchDashboard();
+ if(name==='movement'){renderBMHistory();renderApprovedRestocks();}
+ if(name==='swap')renderSwapOnly();
+ if(name==='expenses')renderBranchExpenses();
+ if(name==='restock'){initRestockRequestDate();updateRestockRequestProducts(restockRequestCategory.value);renderMyRestockRequests();}
+}
+function renderMyRestockRequests(){
+ const box=document.getElementById('myRestockRequests');if(!box)return;
+ const branch=sessionStorage.getItem('branchSession');
+ const data=cloudRestockRequests.filter(x=>x.branch_name===branch).sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+ box.innerHTML=data.length?'<table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Qty</th><th>Status</th><th>Reason / Notes</th></tr></thead><tbody>'+
+ data.map(x=>`<tr><td>${x.request_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${x.requested_quantity||''}</td><td><span class="status-badge ${String(x.status||'').toLowerCase()}">${x.status||''}</span></td><td>${x.reason_notes||''}</td></tr>`).join('')+
+ '</tbody></table>':'<small>No restock requests yet.</small>';
+}
+async function prepareRestockRequest(){
+ if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');
+ const request_date=restockRequestDate.value,category=restockRequestCategory.value,product=restockRequestProduct.value;
+ const requested_quantity=Number(restockRequestQty.value),reason_notes=restockRequestNotes.value.trim();
+ const branch_name=sessionStorage.getItem('branchSession');
+ if(!request_date||!category||!product||!Number.isInteger(requested_quantity)||requested_quantity<=0)return alert('Please complete date, category, product, and a whole-number requested quantity.');
+ if(!confirm('Prepare this Restock Request?\n\nBranch: '+branch_name+'\nProduct: '+product+'\nQuantity: '+requested_quantity))return;
+ const {data:user}=await sb.auth.getUser();
+ const {error}=await sb.from('restock_requests').insert({
+   request_date,branch_id:cloudProfile.branch_id,branch_name,requested_by:user?.user?.id||null,
+   category,product,requested_quantity,reason_notes,status:'PENDING'
+ });
+ if(error)return alert(error.message);
+ restockRequestQty.value=1;restockRequestNotes.value='';
+ await refreshCloud();renderMyRestockRequests();render();
+ alert('Restock Request submitted as PENDING. Inventory was not changed.');
+}
+async function renderRestockApproval(){
+ const body=document.getElementById('restockApprovalRows'),count=document.getElementById('restockApprovalCount');
+ if(!body||!isAdmin())return;
+ const data=cloudRestockRequests.slice().sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+ count.textContent=data.length+' request'+(data.length===1?'':'s');
+ body.innerHTML=data.map(x=>{
+   const controls=x.status==='PENDING'
+    ? `<button onclick="approveRestock('${x.id}')">APPROVE</button><button class="out" onclick="rejectRestock('${x.id}')">REJECT</button>`
+    : '<span class="muted">No action</span>';
+   return `<tr><td>${x.request_date||''}</td><td>${x.branch_name||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${x.requested_quantity||''}</td><td>${x.reason_notes||''}</td><td><span class="status-badge ${String(x.status||'').toLowerCase()}">${x.status||''}</span></td><td>${controls}</td></tr>`;
+ }).join('')||'<tr><td colspan="8">No restock requests.</td></tr>';
+}
+async function approveRestock(id){
+ if(!isAdmin())return alert('Admin access required.');
+ if(!confirm('Approve this Restock Request? This will create exactly one RESTOCK / IN stock movement.'))return;
+ const {error}=await sb.rpc('approve_restock_request',{p_request_id:id});
+ if(error)return alert(error.message);
+ await refreshCloud();renderRestockApproval();renderCurrentStock();render();
+ alert('Restock Request approved. One RESTOCK / IN movement was created.');
+}
+async function rejectRestock(id){
+ if(!isAdmin())return alert('Admin access required.');
+ if(!confirm('Reject this Restock Request? No inventory will be added.'))return;
+ const {error}=await sb.rpc('reject_restock_request',{p_request_id:id});
+ if(error)return alert(error.message);
+ await refreshCloud();renderRestockApproval();render();
+ alert('Restock Request rejected. No inventory was changed.');
+}
 async function saveClearCaseSwap(){
  if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');
  let date=swapDate.value,fromCase=swapFromCase.value,toCase=swapToCase.value,qty=Number(swapQty.value),notes=swapNotes.value.trim();
@@ -72,15 +397,39 @@ async function saveClearCaseSwap(){
  alert('Clear case swap saved. '+fromCase+' -'+qty+', '+toCase+' +'+qty+'.');
 }
 
-const APP_CATEGORIES=['GENERAL UNITS','CLEAR CASE','SILICON CASE','TEMPERED GLASS'];
-function fillCategorySelect(id){let e=document.getElementById(id);if(!e)return;let old=e.value;e.innerHTML='<option value="">All categories</option>'+APP_CATEGORIES.map(c=>`<option>${c}</option>`).join('');if(APP_CATEGORIES.includes(old))e.value=old;}
-function movementDownpayment(x){let m=String(x.notes||'').match(/(?:^|\|\s*)DOWNPAYMENT:\s*([0-9]+(?:\.[0-9]+)?)/i);return m?Number(m[1]):0;}
-function cleanMovementNotes(v){return String(v||'').replace(/\s*\|?\s*DOWNPAYMENT:\s*[0-9]+(?:\.[0-9]+)?/ig,'').trim();}
-function stockFor(branch,category,product){return cloudMoves.filter(x=>x.branch_name===branch&&x.category===category&&x.product===product).reduce((n,x)=>n+(x.direction==='IN'?Number(x.quantity||0):-Number(x.quantity||0)),0);}
-function toggleBackJobDirection(){let e=document.getElementById('branchBackJobDirection');if(!e)return;e.classList.toggle('hidden',branchMovement.value!=='BACK JOB');}
-async function saveBranchMovement(){if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');let type=branchMovement.value,allowed=['SOLD','TRANSFERRED','PULL OUT','FREEBIES','BACK JOB'];if(!allowed.includes(type))return alert('Movement not allowed.');let date=branchMovementDate.value,category=branchMoveCategory.value,product=branchMoveProduct.value,qty=Number(branchMoveQty.value),amount=Number(branchAmount.value||0),downpayment=Number(branchDownpayment.value||0),payment_method=branchPaymentMethod.value.trim(),notes=branchMoveNotes.value.trim(),branch_name=branchPanelName.textContent,directionValue=type==='BACK JOB'?branchBackJobDirection.value:'OUT';if(!date||!category||!product||!Number.isInteger(qty)||qty<=0)return alert('Please complete date, category, product, and a whole-number quantity.');if(downpayment<0||downpayment>amount)return alert('Downpayment must be between 0 and the Amount.');if(directionValue==='OUT'){let available=stockFor(branch_name,category,product);if(qty>available)return alert('INSUFFICIENT STOCK\nAvailable: '+available+' pcs\nRequested OUT: '+qty+' pcs');}if(!confirm('Do you want to add this transaction?'))return;let savedNotes=(notes?notes+' | ':'')+'DOWNPAYMENT: '+downpayment.toFixed(2);const {error}=await sb.from('stock_movements').insert({branch_id:cloudProfile.branch_id,branch_name,employee_name:'BRANCH LOGIN',movement_date:date,category,product,movement:type,direction:directionValue,quantity:qty,amount,payment_method,notes:savedNotes});if(error)return alert(error.message);branchMoveQty.value=1;branchAmount.value='';branchDownpayment.value='';branchPaymentMethod.value='';branchMoveNotes.value='';await refreshCloud();renderBranchHistory();render();alert('Transaction successfully entered.');}
-function filteredMoves(){let b=invBranch?.value||'',c=document.getElementById('invCategory')?.value||'',p=(invProduct?.value||'').toLowerCase(),t=invType?.value||'',d=invDir?.value||'',from=invFrom?.value||'',to=invTo?.value||'';return cloudMoves.filter(x=>(!b||x.branch_name===b)&&(!c||x.category===c)&&(!p||(x.product||'').toLowerCase().includes(p))&&(!t||x.movement===t)&&(!d||x.direction===d)&&(!from||(x.movement_date||'')>=from)&&(!to||(x.movement_date||'')<=to)).map(x=>({date:x.movement_date,branch:x.branch_name,product:x.product,category:x.category,movement:x.movement,direction:x.direction,qty:x.quantity,amount:x.amount,notes:cleanMovementNotes(x.notes),id:x.id}));}
-function clearInventoryFilters(){['invBranch','invCategory','invProduct','invType','invDir','invFrom','invTo'].forEach(id=>{let e=document.getElementById(id);if(e)e.value=''});render();}
+async function saveBranchMovement(){
+ if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');
+ const type=branchMovement.value;
+ if(type==='RESTOCK')return alert('RESTOCK is read-only. It is created only after Admin approval.');
+ const allowed=['SOLD','TRANSFERRED','PULL OUT','FREEBIES','BACK JOB'];
+ if(!allowed.includes(type))return alert('Movement not allowed.');
+ const date=branchMovementDate.value,category=branchMoveCategory.value,product=branchMoveProduct.value;
+ const qty=Number(branchMoveQty.value),amount=Number(branchAmount.value||0);
+ const downpayment=Number(branchDownpayment.value||0),payment_method=branchPaymentMethod.value.trim();
+ const notes=branchMoveNotes.value.trim(),branch_name=branchPanelName.textContent;
+ const directionValue=type==='BACK JOB'?branchBackJobDirection.value:'OUT';
+ if(!date||!category||!product||!Number.isInteger(qty)||qty<=0)return alert('Please complete date, category, product, and a whole-number quantity.');
+ if(downpayment<0||downpayment>amount)return alert('Downpayment must be between 0 and the Amount.');
+ if(directionValue==='OUT'){
+   const available=stockFor(branch_name,category,product);
+   if(qty>available)return alert('INSUFFICIENT STOCK\nAvailable: '+available+' pcs\nRequested OUT: '+qty+' pcs');
+ }
+ if(!confirm('Do you want to add this transaction?'))return;
+ const savedNotes=(notes?notes+' | ':'')+'DOWNPAYMENT: '+downpayment.toFixed(2);
+ const {error}=await sb.from('stock_movements').insert({
+   branch_id:cloudProfile.branch_id,branch_name,employee_name:'BRANCH LOGIN',
+   movement_date:date,category,product,movement:type,direction:directionValue,
+   quantity:qty,amount,payment_method,notes:savedNotes
+ });
+ if(error)return alert(error.message);
+ branchMoveQty.value=1;branchAmount.value='';branchDownpayment.value='';
+ branchPaymentMethod.value='';branchMoveNotes.value='';
+ await refreshCloud();
+ render();
+ alert('Transaction successfully entered.');
+}
+
+
 function renderCurrentStock(){let sbx=currentStockBranch,rows=currentStockRows,kpis=currentStockKpis;if(!sbx||!rows)return;let old=sbx.value,names=[...new Set(cloudMoves.map(x=>x.branch_name).filter(Boolean))];sbx.innerHTML='<option value="">All branches</option>'+names.map(x=>`<option>${x}</option>`).join('');if(names.includes(old))sbx.value=old;fillCategorySelect('currentStockCategory');let branch=sbx.value,cat=currentStockCategory.value,q=(currentStockProduct.value||'').toLowerCase(),data={};cloudMoves.forEach(x=>{let key=x.branch_name+'|'+x.product+'|'+x.category;if(!data[key])data[key]={branch:x.branch_name,product:x.product,category:x.category,stock:0};data[key].stock+=x.direction==='IN'?Number(x.quantity||0):-Number(x.quantity||0)});let list=Object.values(data).filter(x=>(!branch||x.branch===branch)&&(!cat||x.category===cat)&&(!q||x.product.toLowerCase().includes(q)));rows.innerHTML=list.map(x=>`<tr class="${x.stock===0?'stock-zero':x.stock<=5?'stock-low':'stock-ok'}"><td>${x.branch}</td><td>${x.product}</td><td>${x.category}</td><td><b>${x.stock}</b></td></tr>`).join('')||'<tr><td colspan="4">No stock records found.</td></tr>';kpis.innerHTML=`<div class="kpi"><b>${list.length}</b><br>Products</div><div class="kpi"><b>${list.reduce((n,x)=>n+x.stock,0)}</b><br>Total Current Stock</div>`;renderSalesPeriod();}
 function clearCurrentStockFilters(){currentStockBranch.value='';currentStockCategory.value='';currentStockProduct.value='';renderCurrentStock();}
 function salesPeriodSelection(){let branch=salesPeriodBranch.value,cat=salesPeriodCategory.value,p=(salesPeriodProduct.value||'').toLowerCase(),from=salesPeriodFrom.value,to=salesPeriodTo.value;return cloudMoves.filter(x=>x.movement==='SOLD'&&(!branch||x.branch_name===branch)&&(!cat||x.category===cat)&&(!p||(x.product||'').toLowerCase().includes(p))&&(!from||x.movement_date>=from)&&(!to||x.movement_date<=to));}
@@ -93,9 +442,139 @@ function clearSalesExpenseFilters(){sumBranch.value='';sumCategory.value='';sumF
 function downloadCSV(name,rows){let esc=v=>'"'+String(v??'').replaceAll('"','""')+'"',csv=rows.map(r=>r.map(esc).join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 function archiveSelection(){let f=archiveFrom.value,t=archiveTo.value,b=archiveBranch.value;return cloudMoves.filter(x=>(!f||x.movement_date>=f)&&(!t||x.movement_date<=t)&&(!b||x.branch_name===b));}
 function exportArchiveCSV(){if(!isAdmin())return alert('Admin access required.');let a=archiveSelection();if(!a.length)return alert('No transactions found.');downloadCSV('stock_transactions_archive.csv',[['ID','Date','Branch','Employee','Category','Product','Movement','Direction','Quantity','Amount','Payment Method','Notes','Created At'],...a.map(x=>[x.id,x.movement_date,x.branch_name,x.employee_name,x.category,x.product,x.movement,x.direction,x.quantity,x.amount,x.payment_method,x.notes,x.created_at])]);archiveMsg.textContent=a.length+' transactions exported.';}
-async function archiveTransactionsSafe(){if(!isAdmin())return alert('Admin access required.');let a=archiveSelection();if(!a.length)return alert('No transactions found.');if(!archiveFrom.value||!archiveTo.value)return alert('Select both From and To dates.');if(!confirm('Archive-copy '+a.length+' transactions? Active stock movements will NOT be deleted, so Current Stock remains unchanged.'))return;let payload=a.map(x=>({original_id:x.id,branch_id:x.branch_id,branch_name:x.branch_name,employee_name:x.employee_name,movement_date:x.movement_date,category:x.category,product:x.product,movement:x.movement,direction:x.direction,quantity:x.quantity,amount:x.amount,payment_method:x.payment_method,notes:x.notes,created_at:x.created_at}));let {error}=await sb.from('stock_movements_archive').upsert(payload,{onConflict:'original_id'});if(error)return alert('Archive failed. Active transactions were NOT deleted. '+error.message);archiveMsg.textContent=a.length+' transactions safely copied to archive. Active stock history was preserved.';}
-function populateReportFilters(){['invCategory','currentStockCategory','sumCategory','salesPeriodCategory'].forEach(fillCategorySelect);let names=[...new Set(cloudMoves.map(x=>x.branch_name).filter(Boolean))];['archiveBranch','salesPeriodBranch'].forEach(id=>{let e=document.getElementById(id);if(!e)return;let old=e.value;e.innerHTML='<option value="">All branches</option>'+names.map(x=>`<option>${x}</option>`).join('');if(names.includes(old))e.value=old;});}
-const _legacyRender=render;render=function(){_legacyRender();populateReportFilters();renderSalesPeriod();};
-async function cloudInit(){const {data:{session}}=await sb.auth.getSession();if(!session)return;try{await cloudProfileLoad();await refreshCloud();if(isAdmin()){stockNav.classList.remove('hidden');currentStockNav.classList.remove('hidden');summaryNav.classList.remove('hidden');logoutBtn.classList.remove('hidden');}else if(cloudProfile?.role==='BRANCH'){let branch=await cloudBranchName(cloudProfile.branch_id);sessionStorage.setItem('branchSession',branch);}populateReportFilters();render();}catch(e){console.error(e)}}
+async function archiveTransactionsSafe(){if(!isAdmin())return alert('Admin access required.');let a=archiveSelection();if(!a.length)return alert('No transactions found.');if(!archiveFrom.value||!archiveTo.value)return alert('Select both From and To dates.');if(!confirm('Archive-copy '+a.length+' transactions? Active stock movements will NOT be deleted, so Current Stock remains unchanged.'))return;let payload=a.map(x=>({original_id:x.id,branch_id:x.branch_id,branch_name:x.branch_name,employee_name:x.employee_name,movement_date:x.movement_date,category:x.category,product:x.product,movement:x.movement,direction:x.direction,quantity:x.quantity,amount:x.amount,payment_method:x.payment_method,notes:x.notes,created_at:x.created_at}));let {error}=await sb.from('stock_movements_archive').upsert(payload,{onConflict:'original_id'});if(error)return alert('Archive failed. Active transactions were NOT deleted. '+error.message);archiveMsg.textContent=a.length+' transactions safely copied to archive. Active stock history was preserved.';}function togglePassword(id,btn){
+ const e=document.getElementById(id);if(!e)return;
+ const show=e.type==='password';e.type=show?'text':'password';if(btn)btn.textContent=show?'Hide':'Show';
+}
+const APP_CATEGORIES=['GENERAL UNITS','CLEAR CASE','SILICON CASE','TEMPERED GLASS'];
+const PRODUCT_CATALOG={
+ "GENERAL UNITS":["IPHONE UNITS","GIFT BOX","ADAPTOR","CORD","ROBOT CORD","AIRPODS GEN 2","AIRPODS GEN 3","AIRPODS PRO 2","ADAPTOR ACOME","VIVAN POWERBANK","APPLE WATCH","IPHONE 6","REALME TABLET","IPAD MINI 4","IPAD MINI 2","GALAXY A16 B-NEW","GALAXY A16 PRE-OWNED","CORD USB LIGHTNING","INFINIX SMART 10","ANDROID PHONE"],
+ "CLEAR CASE":["XS MAX","XR","11","11 PRO","11 PROMAX","12/12PRO","12 PROMAX","13/14/16E","13 PRO","13 PROMAX","14 PRO","14/15 PLUS","14 PROMAX","15","15 PRO","15 PROMAX","16","16 PLUS","16 PRO","16 PROMAX","17","17 PRO","17 PROMAX"],
+ "SILICON CASE":["XS MAX","XR","11","11 PRO","11 PROMAX","12/12PRO","12 PROMAX","13/14/16E","13 PRO","13 PROMAX","14 PRO","14/15 PLUS","14 PROMAX","15","15 PRO","15 PROMAX","16","16 PLUS","16 PRO","16 PROMAX","17","17 PRO","17 PROMAX"],
+ "TEMPERED GLASS":["TG 11/XR","TG 11 PRO","TG 11 PROMAX","TG 12/12PRO","TG 12 PROMAX","TG 13/14/13PRO/16E","TG 13 PROMAX","TG 14 PRO","TG 14 PROMAX","TG IP 14/15 PLUS","TG 15","TG 15 PRO","TG 15 PROMAX","TG 16","TG 16 PRO","TG 16 PROMAX","TG 16 PLUS","TG 17","TG 17 PRO","TG 17 PROMAX"]
+};
+function allProductsByCategory(c){return PRODUCT_CATALOG[c]||[];}
+function updateBranchProducts(c){
+ const p=document.getElementById('branchMoveProduct');if(!p)return;
+ const list=c?allProductsByCategory(c):[];
+ p.innerHTML='<option value="">Select Product</option>'+list.map(x=>`<option>${x}</option>`).join('');
+}
+function updateProductDropdown(c){
+ const p=document.getElementById('product');if(!p)return;
+ const list=c?allProductsByCategory(c):Object.values(PRODUCT_CATALOG).flat();
+ p.innerHTML='<option value="">Select Product</option>'+[...new Set(list)].map(x=>`<option>${x}</option>`).join('');
+}
+function initMovementDate(){
+ const e=document.getElementById('movementDate');if(e&&!e.value)e.value=new Date().toISOString().slice(0,10);
+}
+function initBranchMovementDate(){
+ const e=document.getElementById('branchMovementDate');if(e&&!e.value)e.value=new Date().toISOString().slice(0,10);
+}
+function initExpenseDate(){
+ const e=document.getElementById('expenseDate');if(e&&!e.value)e.value=new Date().toISOString().slice(0,10);
+}
+function stockFor(branch,category,product){
+ return cloudMoves.filter(x=>x.branch_name===branch&&x.category===category&&x.product===product)
+ .reduce((n,x)=>n+(x.direction==='IN'?Number(x.quantity||0):-Number(x.quantity||0)),0);
+}
+function cleanMovementNotes(v){return String(v||'').replace(/\s*\|?\s*DOWNPAYMENT:\s*[0-9]+(?:\.[0-9]+)?/ig,'').trim();}
+function movementDownpayment(x){const m=String(x.notes||'').match(/(?:^|\|\s*)DOWNPAYMENT:\s*([0-9]+(?:\.[0-9]+)?)/i);return m?Number(m[1]):0;}
+function fillCategorySelect(id){
+ const e=document.getElementById(id);if(!e)return;const old=e.value;
+ e.innerHTML='<option value="">All categories</option>'+APP_CATEGORIES.map(c=>`<option>${c}</option>`).join('');
+ if(APP_CATEGORIES.includes(old))e.value=old;
+}
+function populateReportFilters(){
+ ['invCategory','currentStockCategory','sumCategory','salesPeriodCategory'].forEach(fillCategorySelect);
+ const names=[...new Set(cloudMoves.map(x=>x.branch_name).filter(Boolean))];
+ ['invBranch','currentStockBranch','sumBranch','salesPeriodBranch','archiveBranch'].forEach(id=>{
+   const e=document.getElementById(id);if(!e)return;const old=e.value;
+   e.innerHTML='<option value="">All branches</option>'+names.map(x=>`<option>${x}</option>`).join('');
+   if(names.includes(old))e.value=old;
+ });
+}
+function renderAdminStock(){
+ const rows=document.getElementById('inventorySummary'),moves=document.getElementById('moves'),kpis=document.getElementById('inventoryKpis');
+ if(!rows)return;
+ const a=filteredMoves();
+ const totalIn=a.filter(x=>x.direction==='IN').reduce((n,x)=>n+Number(x.quantity||0),0);
+ const totalOut=a.filter(x=>x.direction==='OUT').reduce((n,x)=>n+Number(x.quantity||0),0);
+ if(kpis)kpis.innerHTML=`<div class="kpi"><b>${a.length}</b><br>Movements</div><div class="kpi"><b>${totalIn}</b><br>Total IN</div><div class="kpi"><b>${totalOut}</b><br>Total OUT</div><div class="kpi"><b>${totalIn-totalOut}</b><br>Net Movement</div>`;
+ rows.innerHTML=a.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.branch_name||''}</td><td>${x.product||''}</td><td>${x.quantity||''}</td><td>${x.category||''}</td><td>${x.movement||''}${x.notes?': '+cleanMovementNotes(x.notes):''}</td><td>${Number(x.amount||0).toFixed(2)}</td><td><button class="out" onclick="deleteMovementById('${x.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="8">No matching stock movements.</td></tr>';
+ if(moves)moves.innerHTML=cloudMoves.slice(0,100).map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.branch_name||''}</td><td>${x.product||''}</td><td>${movementBadge(x.movement)}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td><button class="out" onclick="deleteMovementById('${x.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="7">No stock movements.</td></tr>';
+}
+function filteredMoves(){
+ const b=document.getElementById('invBranch')?.value||'',c=document.getElementById('invCategory')?.value||'';
+ const p=(document.getElementById('invProduct')?.value||'').toLowerCase(),t=document.getElementById('invType')?.value||'';
+ const d=document.getElementById('invDir')?.value||'',from=document.getElementById('invFrom')?.value||'',to=document.getElementById('invTo')?.value||'';
+ return cloudMoves.filter(x=>(!b||x.branch_name===b)&&(!c||x.category===c)&&(!p||(x.product||'').toLowerCase().includes(p))&&(!t||x.movement===t)&&(!d||x.direction===d)&&(!from||(x.movement_date||'')>=from)&&(!to||(x.movement_date||'')<=to));
+}
+function clearInventoryFilters(){
+ ['invBranch','invCategory','invProduct','invType','invDir','invFrom','invTo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});renderAdminStock();
+}
+function exportInventoryCSV(){
+ const a=filteredMoves();downloadCSV('stock_inventory_report.csv',[['Date','Branch','Product','Category','Movement','Direction','Quantity','Amount','Notes'],...a.map(x=>[x.movement_date,x.branch_name,x.product,x.category,x.movement,x.direction,x.quantity,x.amount,cleanMovementNotes(x.notes)])]);
+}
+function show(id){
+ if(['admin','stock','currentStock','salesExpenseSummary'].includes(id)&&!isAdmin())return openAdmin();
+ document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));
+ const e=document.getElementById(id);if(e)e.classList.remove('hidden');
+ if(id==='admin')renderRestockApproval();
+ if(id==='stock')renderAdminStock();
+ if(id==='currentStock'){renderCurrentStock();renderSalesPeriod();}
+ if(id==='salesExpenseSummary')renderSalesExpenseSummary();
+}
+function openAdmin(){
+ document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));
+ document.getElementById('branchLogin').classList.add('hidden');
+ if(isAdmin()){document.getElementById('admin').classList.remove('hidden');renderRestockApproval();render();}
+ else document.getElementById('adminLogin').classList.remove('hidden');
+}
+function initSwapUI(){
+ const d=document.getElementById('swapDate');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);
+ const cases=allProductsByCategory('CLEAR CASE');
+ ['swapFromCase','swapToCase'].forEach(id=>{
+   const e=document.getElementById(id);if(!e)return;const old=e.value;
+   e.innerHTML='<option value="">'+(id==='swapFromCase'?'Case Removed':'Case Added')+'</option>'+cases.map(x=>`<option>${x}</option>`).join('');
+   if(cases.includes(old))e.value=old;
+ });
+}
+function render(){
+ populateReportFilters();
+ renderAdminStock();
+ renderCurrentStock();
+ renderSalesPeriod();
+ renderSalesExpenseSummary();
+ renderRestockApproval();
+ if(document.getElementById('branchPanel')&&!document.getElementById('branchPanel').classList.contains('hidden')){
+   renderBranchDashboard();renderBMHistory();renderSwapOnly();renderBranchExpenses();renderMyRestockRequests();renderApprovedRestocks();
+ }
+}
+function toggleBackJobDirection(){
+ const type=branchMovement.value,isBack=type==='BACK JOB',isRestock=type==='RESTOCK';
+ branchBackJobDirection.classList.toggle('hidden',!isBack);
+ document.getElementById('branchMovementReadOnly').classList.toggle('hidden',!isRestock);
+ document.getElementById('branchMovementEntryFields').classList.toggle('hidden',isRestock);
+ document.getElementById('saveBranchMovementBtn').classList.toggle('hidden',isRestock);
+ if(isRestock)renderApprovedRestocks();
+}
+async function cloudInit(){
+ const {data:{session}}=await sb.auth.getSession();
+ if(!session){return;}
+ try{
+   await cloudProfileLoad();await refreshCloud();
+   if(isAdmin()){
+     stockNav.classList.remove('hidden');currentStockNav.classList.remove('hidden');summaryNav.classList.remove('hidden');logoutBtn.classList.remove('hidden');
+   }else if(cloudProfile?.role==='BRANCH'){
+     const branch=await cloudBranchName(cloudProfile.branch_id);sessionStorage.setItem('branchSession',branch);
+     branchPanel.classList.remove('hidden');branchPanelName.textContent=branch;branchLogin.classList.add('hidden');
+     initBranchMovementDate();initExpenseDate();initRestockRequestDate();initSwapUI();updateBranchProducts('');
+     cleanBranchTab('dashboard',document.querySelector('.branch-tab-btn'));
+   }
+   populateReportFilters();render();
+ }catch(e){console.error(e);}
+}
 cloudInit();
-</script></body></html>
+
+</script>
+</body></html>
