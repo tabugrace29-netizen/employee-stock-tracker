@@ -159,6 +159,17 @@ table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px;bord
 <div id="restockApprovalCount" class="kpi">0 requests</div>
 <div class="clean-table"><table><thead><tr><th>Request Date</th><th>Branch</th><th>Category</th><th>Product</th><th>Requested Qty</th><th>Reason / Notes</th><th>Status</th><th>Action</th></tr></thead><tbody id="restockApprovalRows"></tbody></table></div>
 </div>
+<div class="clean-box" style="border:2px solid #e76f51;background:#fff5f2">
+<h3 style="color:#b42318">ADMIN DATA RESET</h3>
+<p><b>Warning:</b> These controls permanently delete live transaction records. Export anything you need before resetting.</p>
+<div class="toolbar">
+<button class="out" onclick="resetStockMovements()">RESET STOCK MOVEMENTS</button>
+<button class="out" onclick="resetBranchExpenses()">RESET BRANCH EXPENSES</button>
+<button class="out" onclick="resetRestockRequests()">RESET RESTOCK REQUESTS</button>
+<button class="out" style="background:#8b0000" onclick="resetAllTransactionData()">RESET ALL TRANSACTION DATA</button>
+</div>
+<p id="resetDataMsg" class="muted"></p>
+</div>
 <div class="toolbar">
 <button onclick="show('stock')">Stock Movements</button>
 <button onclick="show('currentStock')">Current Stock Tracker</button>
@@ -573,6 +584,47 @@ async function cloudInit(){
    }
    populateReportFilters();render();
  }catch(e){console.error(e);}
+}
+
+async function requireResetPhrase(actionLabel, phrase){
+ if(!isAdmin()){alert('Admin access required.');return false;}
+ const typed=prompt(actionLabel+'\n\nThis permanently deletes live transaction data and cannot be undone.\nType '+phrase+' to continue:');
+ return typed===phrase;
+}
+async function resetDeleteAll(table){
+ const {error}=await sb.from(table).delete().not('id','is',null);
+ if(error)throw error;
+}
+async function finishDataReset(message){
+ const msg=document.getElementById('resetDataMsg');
+ if(msg)msg.textContent=message;
+ await refreshCloud();
+ render();
+}
+async function resetStockMovements(){
+ if(!await requireResetPhrase('RESET STOCK MOVEMENTS','RESET STOCK'))return;
+ try{await resetDeleteAll('stock_movements');await finishDataReset('Stock movements reset successfully.');}
+ catch(e){alert('Reset failed: '+e.message);}
+}
+async function resetBranchExpenses(){
+ if(!await requireResetPhrase('RESET BRANCH EXPENSES','RESET EXPENSES'))return;
+ try{await resetDeleteAll('branch_expenses');await finishDataReset('Branch expenses reset successfully.');}
+ catch(e){alert('Reset failed: '+e.message);}
+}
+async function resetRestockRequests(){
+ if(!await requireResetPhrase('RESET RESTOCK REQUESTS','RESET RESTOCK'))return;
+ try{await resetDeleteAll('restock_requests');await finishDataReset('Restock requests reset successfully.');}
+ catch(e){alert('Reset failed: '+e.message);}
+}
+async function resetAllTransactionData(){
+ if(!await requireResetPhrase('RESET ALL TRANSACTION DATA','RESET ALL DATA'))return;
+ if(!confirm('FINAL WARNING: Delete stock movements, branch expenses, and restock requests?'))return;
+ try{
+  await resetDeleteAll('restock_requests');
+  await resetDeleteAll('branch_expenses');
+  await resetDeleteAll('stock_movements');
+  await finishDataReset('All selected transaction data reset successfully.');
+ }catch(e){alert('Reset failed: '+e.message);}
 }
 cloudInit();
 
