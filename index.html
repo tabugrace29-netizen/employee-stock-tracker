@@ -57,6 +57,7 @@ table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px;bord
 <p>Logged in branch: <b id="branchPanelName"></b></p>
 <div class="branch-tabs">
 <button class="branch-tab-btn active" onclick="cleanBranchTab('dashboard',this)">DASHBOARD</button>
+<button class="branch-tab-btn" onclick="cleanBranchTab('inventory',this)">MY INVENTORY</button>
 <button class="branch-tab-btn" onclick="cleanBranchTab('movement',this)">Branch Stock Movement</button>
 <button class="branch-tab-btn" onclick="cleanBranchTab('swap',this)">Clear Case Swap</button>
 <button class="branch-tab-btn" onclick="cleanBranchTab('expenses',this)">Branch Related Expenses</button>
@@ -76,6 +77,86 @@ table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px;bord
 <div class="clean-table"><table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Movement</th><th>Direction</th><th>Quantity</th><th>Amount</th><th>Payment</th><th>Notes</th></tr></thead><tbody id="dashboardRows"></tbody></table></div>
 </div>
 
+<div id="clean-inventory" class="clean-branch-pane">
+
+<div class="clean-box">
+
+<h4>My Inventory</h4>
+
+<div class="clean-kpis">
+
+<div class="kpi">
+<b id="invProducts">0</b><br>
+Products
+</div>
+
+<div class="kpi">
+<b id="invUnits">0</b><br>
+Units
+</div>
+
+<div class="kpi">
+<b id="invLow">0</b><br>
+Low Stock
+</div>
+
+<div class="kpi">
+<b id="invZero">0</b><br>
+Out Of Stock
+</div>
+
+</div>
+
+<div class="clean-filter">
+
+<input
+id="inventorySearch"
+placeholder="Search Product">
+
+<select id="inventoryCategory">
+
+<option value="">All Categories</option>
+
+<option>GENERAL UNITS</option>
+<option>CLEAR CASE</option>
+<option>SILICON CASE</option>
+<option>TEMPERED GLASS</option>
+
+</select>
+
+</div>
+
+<div class="clean-table">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Category</th>
+<th>Product</th>
+<th>Current Stock</th>
+</tr>
+
+</thead>
+
+<tbody id="inventoryRows">
+
+<tr>
+<td colspan="3">
+Inventory loading...
+</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
 <div id="clean-movement" class="clean-branch-pane">
 <div class="clean-box">
 <h4>Branch Stock Movement</h4>
@@ -326,6 +407,76 @@ function renderApprovedRestocks(){
  box.innerHTML=data.length?'<table><thead><tr><th>Approved Date</th><th>Category</th><th>Product</th><th>Quantity</th><th>Status</th></tr></thead><tbody>'+
  data.map(x=>`<tr><td>${x.request_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${x.requested_quantity||''}</td><td><span class="status-badge approved">APPROVED</span></td></tr>`).join('')+
  '</tbody></table>':'<small>No approved RESTOCK transactions yet.</small>';
+}function renderMyInventory(){
+
+ const body=document.getElementById('inventoryRows');
+
+ if(!body)return;
+
+ const branch=sessionStorage.getItem('branchSession');
+
+ let stock={};
+
+ cloudMoves
+ .filter(x=>x.branch_name===branch)
+ .forEach(x=>{
+
+   const key=x.category+'|'+x.product;
+
+   if(!stock[key]){
+      stock[key]={
+         category:x.category,
+         product:x.product,
+         qty:0
+      };
+   }
+
+   stock[key].qty +=
+      x.direction==='IN'
+      ? Number(x.quantity||0)
+      : -Number(x.quantity||0);
+
+ });
+
+ const data=Object.values(stock)
+.sort((a,b)=>a.qty-b.qty);
+
+ document.getElementById('invProducts').textContent=data.length;
+
+ document.getElementById('invUnits').textContent=
+ data.reduce((n,x)=>n+x.qty,0);
+
+ document.getElementById('invLow').textContent=
+ data.filter(x=>x.qty>0 && x.qty<=5).length;
+
+ document.getElementById('invZero').textContent=
+ data.filter(x=>x.qty<=0).length;
+
+ body.innerHTML=data.map(x=>`
+
+ <tr>
+   <td>${x.category}</td>
+   <td>${x.product}</td>
+   <td>
+<b style="color:${
+x.qty<=0 ? 'red' :
+x.qty<=5 ? 'orange' :
+'green'
+}">
+${x.qty}
+</b>
+</td>
+ </tr>
+
+ `).join('') ||
+
+ `
+ <tr>
+   <td colspan="3">
+      No inventory records found.
+   </td>
+ </tr>
+ `;
 }
 function cleanBranchTab(name,btn){
  document.querySelectorAll('.clean-branch-pane').forEach(x=>x.classList.remove('active'));
@@ -334,11 +485,12 @@ function cleanBranchTab(name,btn){
  if(pane)pane.classList.add('active');
  if(btn)btn.classList.add('active');
  if(name==='dashboard')renderBranchDashboard();
+if(name==='inventory')renderMyInventory();
  if(name==='movement'){renderBMHistory();renderApprovedRestocks();}
  if(name==='swap')renderSwapOnly();
  if(name==='expenses')renderBranchExpenses();
  if(name==='restock'){initRestockRequestDate();updateRestockRequestProducts(restockRequestCategory.value);renderMyRestockRequests();}
-}
+}s
 function renderMyRestockRequests(){
  const box=document.getElementById('myRestockRequests');if(!box)return;
  const branch=sessionStorage.getItem('branchSession');
