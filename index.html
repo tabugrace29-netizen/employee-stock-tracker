@@ -1,784 +1,2029 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stock Inventory, Sales & Branch Management</title>
-<style>
-:root{--navy:#274c77;--blue:#457b9d;--teal:#2a9d8f;--red:#e76f51;--purple:#7b2cbf;--gold:#f4a261;--ink:#172033;--line:#dfe5ee;--bg:#f5f7fb}
-*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:var(--bg);color:var(--ink)}
-header{background:var(--navy);color:#fff;padding:20px}header h2{margin:0 0 4px}header small{opacity:.9}
-main{max-width:1180px;margin:auto;padding:18px}.card{background:#fff;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 2px 10px #0001}
-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}button{background:var(--teal);color:#fff;border:0;border-radius:9px;padding:11px 15px;margin:3px;font-weight:700;cursor:pointer}button:hover{filter:brightness(.96)}button.out{background:var(--red)}button.secondary{background:var(--blue)}
-input,select{padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin:4px;background:#fff;color:var(--ink)}label{font-weight:600;margin-right:5px}
-.hidden{display:none!important}.clean-branch-pane{display:none}.clean-branch-pane.active{display:block}.branch-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.branch-tab-btn{background:#fff;color:var(--ink);border:1px solid #ccd3df}.branch-tab-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
-.clean-box{background:#f8fafc;padding:15px;border-radius:11px;margin:12px 0}.swap-box{background:#f3edff;padding:15px;border-radius:11px}.expense-box{background:#fff7df}.restock-request-box{background:#eef6ff;border:1px solid #c8ddf3;padding:18px;border-radius:12px;color:var(--ink)}.restock-request-box h4,.restock-request-box p,.restock-request-box label{color:var(--ink)}
-.clean-filter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.clean-filter label{display:flex;align-items:center;gap:4px}.clean-table{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:9px;border-bottom:1px solid #e8edf3;text-align:left;vertical-align:top}th{background:#f8fafc}
-.kpi{display:inline-block;margin:5px;padding:12px;background:#e8f2ff;border-radius:10px}.clean-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.clean-kpis .kpi{display:block;margin:0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.muted{color:#667085}.info-box{background:#f7f9fc;padding:12px;border-radius:10px}.restock-readonly{background:#fff8e8;border:1px solid #f0c36d;padding:14px;border-radius:10px;margin-top:12px}
-.status-badge{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:700;color:#fff}.status-badge.pending{background:#f4a261}.status-badge.approved{background:#2a9d8f}.status-badge.rejected{background:#e76f51}
-.mv-badge{display:inline-block;color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}.mv-sold{background:#2a9d8f}.mv-freebies{background:#457b9d}.mv-pull-out{background:#e76f51}.mv-transferred{background:#f4a261}.mv-swap{background:#7b2cbf}.mv-restock{background:#274c77}.mv-back-job{background:#6c5ce7}.mv-from-gift-box{background:#8d6e63}
-.stock-zero{background:#ffe5e5}.stock-low{background:#fff1d6}.stock-ok{background:#eaf7ee}
-.notice{padding:12px;border-radius:10px;background:#eef6ff;border:1px solid #c8ddf3}.toolbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
-@media(max-width:700px){main{padding:10px}.card{padding:13px}header{padding:15px}input,select,button{max-width:100%}table{font-size:13px}}
-</style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Branch Inventory & Sales Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf9',
+                            100: '#ccfbf1',
+                            500: '#2aa18a',
+                            600: '#1f7a68',
+                            700: '#165c4f',
+                            800: '#134e44',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active {
+            border-bottom: 3px solid #2aa18a;
+            color: #1f7a68;
+            font-weight: 600;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
 </head>
-<body>
-<header><h2>Stock Inventory, Sales & Branch Management</h2><small>Shared branch inventory and sales system</small></header>
-<main>
-<nav>
-<button onclick="openAdmin()">Admin</button>
-<button onclick="openBranchLogin()">Branch Login</button>
-<button id="stockNav" class="hidden secondary" onclick="show('stock')">Stock Movements</button>
-<button id="currentStockNav" class="hidden secondary" onclick="show('currentStock')">Current Stock Tracker</button>
-<button id="summaryNav" class="hidden secondary" onclick="show('salesExpenseSummary')">Sales & Expenses</button>
-<button id="logoutBtn" class="hidden out" onclick="adminLogout()">Admin Logout</button>
-</nav>
-<div id="adminLogin" class="card hidden">
-<h3>Admin Login</h3>
-<input id="adminEmail" type="email" placeholder="Admin Email">
-<input id="adminPass" type="password" placeholder="Admin Password">
-<button type="button" onclick="togglePassword('adminPass',this)">Show</button>
-<button onclick="adminLogin()">Login</button><p id="loginMsg"></p>
-<small>Use your Supabase Admin email and password.</small>
-</div>
-<div id="branchLogin" class="card hidden">
-<h3>Branch Login</h3>
-<input id="branchUser" type="email" placeholder="Branch Email">
-<input id="branchPass" type="password" placeholder="Branch Password">
-<button type="button" onclick="togglePassword('branchPass',this)">Show</button>
-<button onclick="doBranchLogin()">Login</button><p id="branchLoginMsg"></p>
-<small>Use the Supabase branch email and password.</small>
-</div>
-<section id="branchPanel" class="card hidden">
-<h3>Branch Workspace</h3>
-<p>Logged in branch: <b id="branchPanelName"></b></p>
-<div class="branch-tabs">
-<button class="branch-tab-btn active" onclick="cleanBranchTab('dashboard',this)">DASHBOARD</button>
-<button class="branch-tab-btn" onclick="cleanBranchTab('inventory',this)">MY INVENTORY</button>
-<button class="branch-tab-btn" onclick="cleanBranchTab('movement',this)">Branch Stock Movement</button>
-<button class="branch-tab-btn" onclick="cleanBranchTab('swap',this)">Clear Case Swap</button>
-<button class="branch-tab-btn" onclick="cleanBranchTab('expenses',this)">Branch Related Expenses</button>
-<button class="branch-tab-btn" onclick="cleanBranchTab('restock',this)">Restock Request</button>
-</div>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
-<div id="clean-dashboard" class="clean-branch-pane active">
-<div class="notice"><b>Branch transaction history</b> — only transactions belonging to your authenticated Branch are shown.</div>
-<div class="clean-filter">
-<select id="dashboardCategory" onchange="renderBranchDashboard()"><option value="">All categories</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select>
-<select id="dashboardMovement" onchange="renderBranchDashboard()"><option value="">All movements</option><option>RESTOCK</option><option>SOLD</option><option>FREEBIES</option><option>TRANSFERRED</option><option>PULL OUT</option><option>BACK JOB</option><option>FROM GIFT BOX</option><option>SWAP</option></select>
-<label>From: <input id="dashboardFrom" type="date" onchange="renderBranchDashboard()"></label>
-<label>To: <input id="dashboardTo" type="date" onchange="renderBranchDashboard()"></label>
-<button onclick="clearDashboardFilters()">Clear Filters</button>
-</div>
-<div id="dashboardCount" class="kpi">0 matching transactions</div>
-<div class="clean-table"><table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Movement</th><th>Direction</th><th>Quantity</th><th>Amount</th><th>Payment</th><th>Notes</th></tr></thead><tbody id="dashboardRows"></tbody></table></div>
-</div>
+<div id="loginScreen"
+class="fixed inset-0 bg-slate-100 flex items-center justify-center z-[9999]">
 
-<div id="clean-inventory" class="clean-branch-pane">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
 
-<div class="clean-box">
+        <h2 class="text-2xl font-bold mb-4 text-center">
+            Inventory Login
+        </h2>
 
-<h4>My Inventory</h4>
+        <select id="loginBranch"
+        class="w-full border rounded-lg p-3 mb-3">
 
-<div class="clean-kpis">
+            <option value="ADMIN">ADMIN</option>
 
-<div class="kpi">
-<b id="invProducts">0</b><br>
-Products
-</div>
+            <option value="BATAAN">BATAAN</option>
+            <option value="CONCEPCION">CONCEPCION</option>
+            <option value="CAPAS">CAPAS</option>
+            <option value="GUIMBA">GUIMBA</option>
+            <option value="PANIQUI">PANIQUI</option>
 
-<div class="kpi">
-<b id="invUnits">0</b><br>
-Units
-</div>
+            <option value="ONE">ONE</option>
+            <option value="TWO">TWO</option>
+            <option value="THREE">THREE</option>
+            <option value="FOUR">FOUR</option>
+            <option value="FIVE">FIVE</option>
 
-<div class="kpi">
-<b id="invLow">0</b><br>
-Low Stock
-</div>
+        </select>
 
-<div class="kpi">
-<b id="invZero">0</b><br>
-Out Of Stock
-</div>
+        <input
+            type="password"
+            id="loginPassword"
+            placeholder="Password"
+            class="w-full border rounded-lg p-3 mb-3">
+
+        <button
+            onclick="loginSystem()"
+            class="w-full bg-brand-500 text-white rounded-lg py-3">
+
+            Login
+
+        </button>
+
+    </div>
 
 </div>
 
-<div class="clean-filter">
+    <!-- TOP NAV BAR -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- App Title -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-brand-500 text-white p-2.5 rounded-xl shadow-md">
+                        <i class="fa-solid font-bold fa-boxes-stacked text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight text-slate-900">Multi-Branch System</h1>
+                        <p class="text-xs text-slate-500 font-medium" id="headerRoleBadge">Inventory & Sales Hub</p>
+                    </div>
+                </div>
 
-<input
-id="inventorySearch"
-placeholder="Search Product">
+                <!-- User Role Controls -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-slate-100 rounded-lg p-1.5 flex items-center gap-2 border border-slate-200">
+                        <i class="fa-solid fa-user-gear text-slate-500 ml-2"></i>
+                        <select id="roleSelector"
+style="display:none"
+onchange="switchRole(this.value)"
+class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pr-2">
+                            <option value="ADMIN">Role: ADMIN WORKSPACE</option>
+                            <option value="BATAAN">Branch: BATAAN</option>
+<option value="CONCEPCION">Branch: CONCEPCION</option>
+<option value="CAPAS">Branch: CAPAS</option>
+<option value="GUIMBA">Branch: GUIMBA</option>
+<option value="PANIQUI">Branch: PANIQUI</option>
+<option value="ONE">Branch: ONE</option>
+<option value="TWO">Branch: TWO</option>
+<option value="THREE">Branch: THREE</option>
+<option value="FOUR">Branch: FOUR</option>
+<option value="FIVE">Branch: FIVE</option>
+                        </select>
+                    </div>
+                    <button onclick="resetDataPrompt()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-2 px-3 rounded-lg border border-slate-200 transition" title="Reset default sample data">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Reset Data
+                    </button>
+<button
+onclick="logoutSystem()"
+class="text-xs bg-rose-500 hover:bg-rose-600 text-white font-medium py-2 px-3 rounded-lg transition">
 
-<select id="inventoryCategory">
+    Logout
 
-<option value="">All Categories</option>
+</button>
+                </div>
+            </div>
+        </div>
+    </header>
 
-<option>GENERAL UNITS</option>
-<option>CLEAR CASE</option>
-<option>SILICON CASE</option>
-<option>TEMPERED GLASS</option>
+    <!-- NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
 
-</select>
+    <!-- MAIN APP CONTENT CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ==================== ADMIN WORKSPACE ==================== -->
+        <div id="adminWorkspace" class="space-y-6">
+            <!-- Navigation Tabs -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-1 flex flex-wrap gap-2 text-sm font-medium">
+                <button onclick="switchAdminTab('movement')" id="tab-admin-movement" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 bg-brand-50 text-brand-600 font-semibold">
+                    <i class="fa-solid fa-right-left"></i> Stock Movement Management
+                </button>
+                <button onclick="switchAdminTab('restock')" id="tab-admin-restock" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-truck-ramp-box"></i> Restock Requests 
+                    <span id="pendingRestockBadge" class="bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full font-bold hidden">0</span>
+                </button>
+                <button onclick="switchAdminTab('products')" id="tab-admin-products" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-box"></i> Product Management
+                </button>
+                <button onclick="switchAdminTab('stock')" id="tab-admin-stock" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-warehouse"></i> Current Stock Tracker
+                </button>
+                <button onclick="switchAdminTab('sales')" id="tab-admin-sales" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-chart-line"></i> Sales & Expenses Summary
+                </button>
+                <button onclick="switchAdminTab('cash')" id="tab-admin-cash" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-vault"></i> Admin Cash On Hand
+                </button>
+            </div>
+
+            <!-- ADMIN TAB 1: Stock Movement Management -->
+            <div id="adminTabMovement" class="space-y-5">
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Movements</div>
+                        <div class="text-2xl font-bold text-slate-900 mt-2" id="metricTotalMovements">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
+                        <div class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Stock IN</div>
+                        <div class="text-2xl font-bold text-emerald-600 mt-2" id="metricTotalIn">+0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-rose-500">
+                        <div class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Total Stock OUT / SOLD</div>
+                        <div class="text-2xl font-bold text-rose-600 mt-2" id="metricTotalOut">-0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-brand-500">
+                        <div class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Net Movement</div>
+                        <div class="text-2xl font-bold text-brand-600 mt-2" id="metricNetMovement">0</div>
+                    </div>
+                </div>
+
+                <!-- Filters & Controls Bar -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-wrap justify-between items-center gap-3">
+                        <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-filter text-brand-500 mr-2"></i>Filter Movements</h3>
+                        <div class="flex items-center gap-2">
+                            <button onclick="exportStockMovementsCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-file-csv"></i> Export CSV
+                            </button>
+                            <button onclick="deleteSelectedMovements()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-trash"></i> Delete Selected
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Branch</label>
+                            <select id="filterMovBranch" onchange="renderAdminMovements()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="">All Branches</option>
+                                <option value="BATAAN">BATAAN</option>
+                                <option value="CONCEPCION">CONCEPCION</option>
+                                <option value="TARLAC">TARLAC</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Category</label>
+                            <select id="filterMovCategory" onchange="renderAdminMovements()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="">All Categories</option>
+                                <option value="GENERAL UNITS">GENERAL UNITS</option>
+                                <option value="CLEAR CASE">CLEAR CASE</option>
+                                <option value="SILICONE CASE">SILICONE CASE</option>
+                                <option value="TEMPERED GLASS">TEMPERED GLASS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Type</label>
+                            <select id="filterMovType" onchange="renderAdminMovements()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="">All Types</option>
+                                <option value="SOLD">SOLD</option>
+                                <option value="RESTOCK_IN">RESTOCK IN</option>
+                                <option value="SWAP">SWAP</option>
+                                <option value="MANUAL_OUT">MANUAL OUT</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">In / Out</label>
+                            <select id="filterMovDirection" onchange="renderAdminMovements()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="">All Directions</option>
+                                <option value="IN">IN (+)</option>
+                                <option value="OUT">OUT (-)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Start Date</label>
+                            <input type="date" id="filterMovStartDate" onchange="renderAdminMovements()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">End Date</label>
+                            <input type="date" id="filterMovEndDate" onchange="renderAdminMovements()" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Movement Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3 w-10 text-center">
+                                        <input type="checkbox" id="selectAllMov" onclick="toggleSelectAllMovements(this)" class="rounded border-slate-300">
+                                    </th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Branch</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Product</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Dir</th>
+                                    <th class="p-3 text-right">Qty</th>
+                                    <th class="p-3 text-right">Amount</th>
+                                    <th class="p-3">Notes</th>
+                                    <th class="p-3 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminMovementTableBody" class="divide-y divide-slate-200">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 2: Restock Request Approval -->
+            <div id="adminTabRestock" class="hidden space-y-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">Pending Restock Requests</h3>
+                        <p class="text-xs text-slate-500">Approve requests to directly increment branch inventory stock.</p>
+                    </div>
+                    <button onclick="approveAllRestockRequests()" class="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-4 py-2 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-double"></i> Approve All Pending
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Requested Date</th>
+                                    <th class="p-3">Branch</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Product Name</th>
+                                    <th class="p-3 text-right">Requested Qty</th>
+                                    <th class="p-3">Reason / Notes</th>
+                                    <th class="p-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminRestockTableBody" class="divide-y divide-slate-200">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 3: Product Management -->
+            <div id="adminTabProducts" class="hidden space-y-5">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Add / Edit Form Card -->
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm h-fit">
+                        <h3 class="font-bold text-slate-800 text-base mb-4 flex items-center gap-2" id="prodFormTitle">
+                            <i class="fa-solid fa-plus-circle text-brand-500"></i> Add New Product
+                        </h3>
+                        <form id="productForm" onsubmit="handleProductSubmit(event)" class="space-y-4 text-xs">
+                            <input type="hidden" id="prodId">
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Product Name *</label>
+                                <input type="text" id="prodName" required placeholder="e.g. iPhone 15 Pro Max Clear Case" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Category *</label>
+                                <select id="prodCategory" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <option value="GENERAL UNITS">GENERAL UNITS</option>
+                                    <option value="CLEAR CASE">CLEAR CASE</option>
+                                    <option value="SILICONE CASE">SILICONE CASE</option>
+                                    <option value="TEMPERED GLASS">TEMPERED GLASS</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Standard Selling Price (₱)</label>
+                                <input type="number" id="prodPrice" step="0.01" min="0" placeholder="0.00" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Initial Stock for All Branches</label>
+                                <input type="number" id="prodInitialStock" min="0" value="10" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div class="flex items-center gap-2 pt-2">
+                                <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 rounded-lg transition">Save Product</button>
+                                <button type="button" onclick="resetProductForm()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2.5 px-4 rounded-lg transition">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Product Table -->
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 text-base">Product Directory</h3>
+                            <span class="text-xs text-slate-500 font-semibold" id="productCountBadge">0 Products</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Category</th>
+                                        <th class="p-3">Product Name</th>
+                                        <th class="p-3 text-right">Price</th>
+                                        <th class="p-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminProductsTableBody" class="divide-y divide-slate-200">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 4: Current Stock Tracker -->
+            <div id="adminTabStock" class="hidden space-y-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Live Multi-Branch Inventory</h3>
+                        <p class="text-xs text-slate-500">Real-time stock counts across all locations.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select id="stockFilterBranch" onchange="renderAdminStockTracker()" class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold text-slate-700">
+                            <option value="">All Branches</option>
+                            <option value="BATAAN">BATAAN</option>
+                            <option value="CONCEPCION">CONCEPCION</option>
+                            <option value="TARLAC">TARLAC</option>
+                        </select>
+                        <select id="stockFilterCategory" onchange="renderAdminStockTracker()" class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold text-slate-700">
+                            <option value="">All Categories</option>
+                            <option value="GENERAL UNITS">GENERAL UNITS</option>
+                            <option value="CLEAR CASE">CLEAR CASE</option>
+                            <option value="SILICONE CASE">SILICONE CASE</option>
+                            <option value="TEMPERED GLASS">TEMPERED GLASS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Branch</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Product Name</th>
+                                    <th class="p-3 text-right">Current Stock</th>
+                                    <th class="p-3 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminStockTableBody" class="divide-y divide-slate-200">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 5: Sales & Expenses Summary -->
+            <div id="adminTabSales" class="hidden space-y-5">
+                <!-- Running Totals Metrics -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-slate-500 text-xs font-semibold uppercase">Total Gross Sales</div>
+                        <div class="text-2xl font-bold text-emerald-600 mt-2" id="sumTotalSales">₱0.00</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-slate-500 text-xs font-semibold uppercase">Total Downpayments</div>
+                        <div class="text-2xl font-bold text-blue-600 mt-2" id="sumTotalDownpayment">₱0.00</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-slate-500 text-xs font-semibold uppercase">Total Remaining Balance</div>
+                        <div class="text-2xl font-bold text-amber-600 mt-2" id="sumTotalBalance">₱0.00</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-slate-500 text-xs font-semibold uppercase">Total Expenses</div>
+                        <div class="text-2xl font-bold text-rose-600 mt-2" id="sumTotalExpenses">₱0.00</div>
+                    </div>
+                </div>
+
+                <!-- Combined Sales & Expense Journal Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-base">Financial Journal Log</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Branch</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Product / Description</th>
+                                    <th class="p-3 text-right">Sales Amount</th>
+                                    <th class="p-3 text-right">Downpayment</th>
+                                    <th class="p-3 text-right">Rem. Balance</th>
+                                    <th class="p-3 text-right">Expense</th>
+                                    <th class="p-3 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminSalesTableBody" class="divide-y divide-slate-200">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN TAB 6: Admin Cash On Hand -->
+            <div id="adminTabCash" class="hidden space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <div id="cashCardBataan" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardConcepcion" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardCapas" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardGuimba" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardPaniqui" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardOne" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardTwo" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardThree" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardFour" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
+
+    <div id="cashCardFive" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-3"></div>
 
 </div>
+                </div>
+            </div>
+        </div>
 
-<div class="clean-table">
+        <!-- ==================== BRANCH WORKSPACE ==================== -->
+        <div id="branchWorkspace" class="hidden space-y-6">
+            <!-- Branch Header Header Banner -->
+            <div class="bg-gradient-to-r from-brand-600 to-brand-800 rounded-xl p-5 text-white shadow-md flex justify-between items-center">
+                <div>
+                    <span class="text-xs font-semibold tracking-wider uppercase opacity-80">Active Branch Location</span>
+                    <h2 class="text-2xl font-extrabold" id="branchHeaderTitle">BRANCH NAME</h2>
+                </div>
+                <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg text-right">
+                    <div class="text-xs opacity-80">Estimated Cash On Hand</div>
+                    <div class="text-xl font-bold" id="branchHeaderCash">₱0.00</div>
+                </div>
+            </div>
 
-<table>
+            <!-- Branch Navigation Tabs -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-1 flex flex-wrap gap-2 text-sm font-medium">
+                <button onclick="switchBranchTab('dashboard')" id="tab-branch-dashboard" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 bg-brand-50 text-brand-600 font-semibold">
+                    <i class="fa-solid fa-gauge"></i> Dashboard
+                </button>
+                <button onclick="switchBranchTab('inventory')" id="tab-branch-inventory" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-boxes-stacked"></i> My Inventory
+                </button>
+                <button onclick="switchBranchTab('movement')" id="tab-branch-movement" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-cart-plus"></i> Record Movement / Sale
+                </button>
+                <button onclick="switchBranchTab('swap')" id="tab-branch-swap" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-rotate"></i> Clear Case Swap
+                </button>
+                <button onclick="switchBranchTab('expenses')" id="tab-branch-expenses" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-receipt"></i> Branch Expenses
+                </button>
+                <button onclick="switchBranchTab('restock')" id="tab-branch-restock" class="px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50">
+                    <i class="fa-solid fa-paper-plane"></i> Restock Request
+                </button>
+            </div>
 
-<thead>
+            <!-- BRANCH TAB 1: Dashboard -->
+            <div id="branchTabDashboard" class="space-y-6">
+                <!-- Metrics Overview -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-slate-500 text-xs font-semibold uppercase">Total Sales Recorded</div>
+                        <div class="text-2xl font-bold text-emerald-600 mt-2" id="bDashSales">₱0.00</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-slate-500 text-xs font-semibold uppercase">Total Branch Expenses</div>
+                        <div class="text-2xl font-bold text-rose-600 mt-2" id="bDashExpenses">₱0.00</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-slate-500 text-xs font-semibold uppercase">Items Sold Today</div>
+                        <div class="text-2xl font-bold text-brand-600 mt-2" id="bDashSoldQty">0 pcs</div>
+                    </div>
+                </div>
 
-<tr>
-<th>Category</th>
-<th>Product</th>
-<th>Current Stock</th>
-</tr>
+                <!-- Recent Activity Log -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <h3 class="font-bold text-slate-800 text-base mb-4"><i class="fa-solid fa-clock-rotate-left text-brand-500 mr-2"></i>Recent Branch Activity Log</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Category / Action</th>
+                                    <th class="p-3">Details</th>
+                                    <th class="p-3 text-right">Impact</th>
+                                </tr>
+                            </thead>
+                            <tbody id="branchDashboardActivityBody" class="divide-y divide-slate-200">
+                                <!-- Dynamic activity rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-</thead>
+            <!-- BRANCH TAB 2: My Inventory -->
+            <div id="branchTabInventory" class="hidden space-y-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap justify-between items-center gap-4">
+                    <div class="relative flex-grow max-w-xs">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                        <input type="text" id="branchInvSearch" oninput="renderBranchInventory()" placeholder="Search product..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <select id="branchInvCategory" onchange="renderBranchInventory()" class="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-semibold text-slate-700">
+                            <option value="">All Categories</option>
+                            <option value="GENERAL UNITS">GENERAL UNITS</option>
+                            <option value="CLEAR CASE">CLEAR CASE</option>
+                            <option value="SILICONE CASE">SILICONE CASE</option>
+                            <option value="TEMPERED GLASS">TEMPERED GLASS</option>
+                        </select>
+                    </div>
+                </div>
 
-<tbody id="inventoryRows">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Product Name</th>
+                                    <th class="p-3 text-right">Standard Price</th>
+                                    <th class="p-3 text-right">Current Stock</th>
+                                    <th class="p-3 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="branchInventoryTableBody" class="divide-y divide-slate-200">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-<tr>
-<td colspan="3">
-Inventory loading...
-</td>
-</tr>
+            <!-- BRANCH TAB 3: Stock Movement / Sale Form -->
+            <div id="branchTabMovement" class="hidden space-y-5">
+                <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-800 text-lg border-b pb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-cash-register text-brand-500"></i> Record Stock Movement or Sale
+                    </h3>
+                    <form id="branchMovForm" onsubmit="handleBranchMovementSubmit(event)" class="space-y-4 text-xs">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Date *</label>
+                                <input type="date" id="bMovDate" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Movement Type *</label>
+                                <select id="bMovType" onchange="updateBranchMovFormState()" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <option value="SOLD">SOLD (Customer Purchase)</option>
+                                    <option value="MANUAL_OUT">MANUAL OUT (Defect / Lost / Transfer)</option>
+                                    <option value="RESTOCK_IN">MANUAL IN (Local Stock Addition)</option>
+                                </select>
+                            </div>
+                        </div>
 
-</tbody>
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Product *</label>
+                            <select id="bMovProduct" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                <!-- Dynamic options -->
+                            </select>
+                        </div>
 
-</table>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Quantity *</label>
+                                <input type="number" id="bMovQty" min="1" value="1" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div id="containerTotalAmount">
+                                <label class="block font-semibold text-slate-600 mb-1">Total Sales Price (₱)</label>
+                                <input type="number" id="bMovAmount" step="0.01" min="0" placeholder="0.00" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                        </div>
 
-</div>
+                        <div id="containerPaymentDetails" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Downpayment Collected (₱)</label>
+                                <input type="number" id="bMovDownpayment" step="0.01" min="0" placeholder="0.00" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                <span class="text-[10px] text-slate-400">Leave 0 if paid in full.</span>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Payment Method</label>
+                                <select id="bMovPaymentMethod" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <option value="CASH">CASH (Updates Cash On Hand)</option>
+                                    <option value="GCASH">GCASH / ONLINE</option>
+                                    <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                                </select>
+                            </div>
+                        </div>
 
-</div>
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Notes / Remarks</label>
+                            <input type="text" id="bMovNotes" placeholder="Customer name or reference details..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
 
-</div>
-<div id="clean-movement" class="clean-branch-pane">
-<div class="clean-box">
-<h4>Branch Stock Movement</h4>
-<div id="branchMovementEntryFields">
-<label>Date: <input id="branchMovementDate" type="date"></label>
-<select id="branchMoveCategory" onchange="updateBranchProducts(this.value)"><option value="">Select Category</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select>
-<select id="branchMoveProduct"><option value="">Select Product</option></select>
-<select id="branchMovement" onchange="toggleBackJobDirection()">
-<option>SOLD</option><option>TRANSFERRED</option><option>PULL OUT</option><option>FREEBIES</option><option>BACK JOB</option><option>RESTOCK</option>
-</select>
-<select id="branchBackJobDirection" class="hidden"><option>IN</option><option>OUT</option></select>
-<input id="branchMoveQty" type="number" min="1" value="1" placeholder="Quantity">
-<input id="branchAmount" type="number" min="0" step="0.01" placeholder="Amount">
-<input id="branchDownpayment" type="number" min="0" step="0.01" placeholder="Downpayment">
-<input id="branchPaymentMethod" placeholder="Payment Method">
-<input id="branchMoveNotes" placeholder="Notes">
-<button id="saveBranchMovementBtn" onclick="saveBranchMovement()">Save Branch Movement</button>
-<p id="branchMoveMsg"></p>
-</div>
-<div id="branchMovementReadOnly" class="restock-readonly hidden">
-<h4>RESTOCK — VIEW ONLY</h4>
-<p>RESTOCK is created through Admin approval. Branch users may view approved RESTOCK transactions for verification only.</p>
-<div id="branchApprovedRestocks"></div>
-</div>
-</div>
-<h4>Branch Stock Movement History</h4>
-<div class="clean-filter">
-<select id="bmCategory" onchange="renderBMHistory()"><option value="">All categories</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select>
-<label>From: <input id="bmFrom" type="date" onchange="renderBMHistory()"></label>
-<label>To: <input id="bmTo" type="date" onchange="renderBMHistory()"></label>
-<button onclick="clearBranchHistoryFilters()">Clear Filters</button>
-</div>
-<div class="clean-table"><table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Movement</th><th>Direction</th><th>Quantity</th><th>Amount</th></tr></thead><tbody id="bmRows"></tbody></table></div>
-</div>
+                        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-lg transition text-sm shadow-md">
+                            Save Movement Record
+                        </button>
+                    </form>
+                </div>
+            </div>
 
-<div id="clean-swap" class="clean-branch-pane">
-<div class="swap-box"><h4>Clear Case Swap</h4>
-<label>Date: <input id="swapDate" type="date"></label>
-<select id="swapFromCase"><option value="">Case Removed</option></select><span> → </span>
-<select id="swapToCase"><option value="">Case Added</option></select>
-<input id="swapQty" type="number" min="1" value="1" placeholder="Quantity">
-<input id="swapNotes" placeholder="Reason / Notes">
-<button onclick="saveClearCaseSwap()">Save Clear Case Swap</button><p id="swapMsg"></p>
-</div>
-<div class="clean-table"><table><thead><tr><th>Date</th><th>Product</th><th>Direction</th><th>Quantity</th><th>Notes</th></tr></thead><tbody id="swapRows"></tbody></table></div>
-</div>
+            <!-- BRANCH TAB 4: Clear Case Swap -->
+            <div id="branchTabSwap" class="hidden space-y-5">
+                <div class="max-w-xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-rotate text-brand-500"></i> Clear Case Swap Process
+                        </h3>
+                        <p class="text-xs text-slate-500">Automatically deducts the removed case and adds the new case to inventory.</p>
+                    </div>
 
-<div id="clean-expenses" class="clean-branch-pane">
-<div class="clean-box expense-box"><h4>Branch Related Expenses</h4>
-<label>Date: <input id="expenseDate" type="date"></label>
-<input id="expenseDescription" placeholder="Expense Description">
-<input id="expenseAmount" type="number" min="0" step="0.01" placeholder="Amount">
-<input id="expenseNotes" placeholder="Expense Notes">
-<button onclick="saveBranchExpense()">Save Expense</button><p id="expenseMsg"></p>
-</div>
-<div class="clean-filter"><label>From: <input id="beFrom" type="date" onchange="renderBranchExpenses()"></label><label>To: <input id="beTo" type="date" onchange="renderBranchExpenses()"></label><button onclick="beFrom.value=beTo.value='';renderBranchExpenses()">Clear Filters</button></div>
-<div id="branchExpenseList"></div>
-</div>
+                    <form id="branchSwapForm" onsubmit="handleBranchSwapSubmit(event)" class="space-y-4 text-xs">
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Swap Date *</label>
+                            <input type="date" id="swapDate" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
 
-<div id="clean-restock" class="clean-branch-pane">
-<div class="restock-request-box">
-<h4>RESTOCK REQUEST</h4>
-<p>This prepares a request only. It does not create a RESTOCK stock movement. Inventory will only be updated after Admin approval.</p>
-<label>Date: <input id="restockRequestDate" type="date"></label>
-<select id="restockRequestCategory" onchange="updateRestockRequestProducts(this.value)"><option value="">Select Category</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select>
-<select id="restockRequestProduct"><option value="">Select Product</option></select>
-<input id="restockRequestQty" type="number" min="1" value="1" placeholder="Requested Quantity">
-<input id="restockRequestNotes" placeholder="Reason / Notes">
-<button onclick="prepareRestockRequest()">Prepare Request</button>
-<p id="restockRequestMsg"></p>
-</div>
-<h4>My Restock Requests</h4><div id="myRestockRequests"></div>
-</div>
-<button class="out" onclick="branchLogout()">Branch Logout</button>
-</section>
-<section id="admin" class="card hidden">
-<h3>Admin Management Dashboard</h3>
-<div class="clean-box">
-<h3>RESTOCK APPROVAL</h3>
-<p>Review Branch Restock Requests. Approving creates exactly one RESTOCK / IN inventory movement. Rejecting does not change inventory.</p>
-<div id="restockApprovalCount" class="kpi">0 requests</div>
-<div class="clean-table"><table><thead><tr><th>Request Date</th><th>Branch</th><th>Category</th><th>Product</th><th>Requested Qty</th><th>Reason / Notes</th><th>Status</th><th>Action</th></tr></thead><tbody id="restockApprovalRows"></tbody></table></div>
-</div>
-<div class="clean-box" style="border:2px solid #e76f51;background:#fff5f2">
-<h3 style="color:#b42318">ADMIN DATA RESET</h3>
-<p><b>Warning:</b> These controls permanently delete live transaction records. Export anything you need before resetting.</p>
-<div class="toolbar">
-<button class="out" onclick="resetStockMovements()">RESET STOCK MOVEMENTS</button>
-<button class="out" onclick="resetBranchExpenses()">RESET BRANCH EXPENSES</button>
-<button class="out" onclick="resetRestockRequests()">RESET RESTOCK REQUESTS</button>
-<button class="out" style="background:#8b0000" onclick="resetAllTransactionData()">RESET ALL TRANSACTION DATA</button>
-</div>
-<p id="resetDataMsg" class="muted"></p>
-</div>
-<div class="toolbar">
-<button onclick="show('stock')">Stock Movements</button>
-<button onclick="show('currentStock')">Current Stock Tracker</button>
-<button onclick="show('salesExpenseSummary')">Sales & Expenses</button>
-</div>
-</section>
-<section class="card hidden" id="stock"><h3>Admin Stock Movement Management</h3><div style="background:#f7f9fc;padding:12px;border-radius:10px;margin:12px 0"><h3>Inventory Report Summary</h3><div><select id="invBranch" onchange="render()"><option value="">All branches</option></select><select id="invCategory" onchange="render()"><option value="">All categories</option></select><input id="invProduct" oninput="render()" placeholder="Filter product"/><select id="invType" onchange="render()"><option value="">All movement types</option><option>RESTOCK</option><option>SOLD</option><option>FREEBIES</option><option>TRANSFERRED</option><option>PULL OUT</option><option>BACK JOB</option><option>FROM GIFT BOX</option><option>SWAP</option></select><select id="invDir" onchange="render()"><option value="">IN &amp; OUT</option><option>IN</option><option>OUT</option></select><label>From: <input id="invFrom" onchange="render()" type="date"/></label><label>To: <input id="invTo" onchange="render()" type="date"/></label><button onclick="clearInventoryFilters()">Clear</button><button onclick="exportInventoryCSV()">Download Report CSV</button></div><div id="inventoryKpis" style="margin:12px 0"></div><table><thead><tr><th>Date</th><th>Branch Name</th><th>Product Name</th><th>Quantity</th><th>Category</th><th>Notes</th><th>Amount</th><th>Action</th></tr></thead><tbody id="inventorySummary"></tbody></table></div><p><b>Admin:</b> Add new movement records below or delete an incorrect movement from the table.</p><p>Select a date, category and product, then enter the movement details.</p><label><b>Movement Date:</b> <input id="movementDate" type="date"/></label><select id="movementBranch"></select><select id="category" onchange="updateProductDropdown(this.value)"><option value="">Select Category</option><option>GENERAL UNITS</option><option>CLEAR CASE</option><option>SILICON CASE</option><option>TEMPERED GLASS</option></select><select id="product"><option value="">Select Product</option></select><select id="movement"><option>RESTOCK</option><option>SOLD</option><option>FREEBIES</option><option>TRANSFERRED</option><option>PULL OUT</option><option>BACK JOB</option><option>FROM GIFT BOX</option></select><select id="direction"><option>IN</option><option>OUT</option></select><input id="qty" min="1" type="number" value="1"/><input id="notes" placeholder="Notes"/><button onclick="addMovement()">Save Movement</button><table><thead><tr><th>Date</th><th>Branch</th><th>Product</th><th>Type</th><th>Dir.</th><th>Qty</th><th>Action</th></tr></thead><tbody id="moves"></tbody></table><div class="card" style="background:#f7f9fc"><h3>Transaction Export &amp; Archive</h3><p>Export first. Archive copies records to stock_movements_archive without deleting active stock history, so Current Stock cannot change.</p><label>From: <input id="archiveFrom" type="date"/></label><label>To: <input id="archiveTo" type="date"/></label><select id="archiveBranch"><option value="">All branches</option></select><button onclick="exportArchiveCSV()">Export Transactions CSV</button><button class="out" onclick="archiveTransactionsSafe()">Archive Exported Range</button><p id="archiveMsg"></p></div></section><section class="card hidden" id="currentStock"><h3>Current Stock Tracker</h3><div><select id="currentStockBranch" onchange="renderCurrentStock()"><option value="">All branches</option></select><select id="currentStockCategory" onchange="renderCurrentStock()"><option value="">All categories</option></select><input id="currentStockProduct" oninput="renderCurrentStock()" placeholder="Filter product"/><button onclick="clearCurrentStockFilters()">Clear Filters</button></div><div id="currentStockKpis" style="margin:12px 0"></div><table><thead><tr><th>Branch</th><th>Product</th><th>Category</th><th>Current Stock</th></tr></thead><tbody id="currentStockRows"></tbody></table><div class="card" style="background:#f7f9fc"><h3>Sales for Selected Period</h3><div><select id="salesPeriodBranch" onchange="renderSalesPeriod()"><option value="">All branches</option></select><select id="salesPeriodCategory" onchange="renderSalesPeriod()"><option value="">All categories</option></select><input id="salesPeriodProduct" oninput="renderSalesPeriod()" placeholder="Filter product"/><label>From: <input id="salesPeriodFrom" onchange="renderSalesPeriod()" type="date"/></label><label>To: <input id="salesPeriodTo" onchange="renderSalesPeriod()" type="date"/></label><select id="salesPeriodMonth" onchange="applySalesMonth()"><option value="">Month</option><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select><input id="salesPeriodYear" max="2100" min="2020" onchange="applySalesMonth()" placeholder="Year" type="number"/><button onclick="clearSalesPeriodFilters()">Clear Filters</button><button onclick="exportSalesCSV()">Download Sales CSV</button></div><div id="salesPeriodKpis" style="margin:12px 0"></div><h4>Units Sold per Category</h4><table><thead><tr><th>Category</th><th>Units Sold</th></tr></thead><tbody id="salesCategoryRows"></tbody></table><h4>Units Sold per Product</h4><table><thead><tr><th>Branch</th><th>Category</th><th>Product</th><th>Units Sold</th><th>Sales Amount</th></tr></thead><tbody id="salesProductRows"></tbody></table><h4>Top Selling Products</h4><table><thead><tr><th>Rank</th><th>Product</th><th>Category</th><th>Units Sold</th><th>Sales Amount</th></tr></thead><tbody id="topSellingRows"></tbody></table></div></section><section class="card hidden" id="salesExpenseSummary"><h3>Sales and Expenses Summary</h3><select id="sumBranch" onchange="renderSalesExpenseSummary()"><option value="">All branches</option></select><select id="sumCategory" onchange="renderSalesExpenseSummary()"><option value="">All categories</option></select><label>From: <input id="sumFrom" onchange="renderSalesExpenseSummary()" type="date"/></label><label>To: <input id="sumTo" onchange="renderSalesExpenseSummary()" type="date"/></label><button onclick="clearSalesExpenseFilters()">Clear Filters</button><div class="grid" id="salesExpenseKpis"></div><h4>Sales and Expenses Details</h4><table><thead><tr><th>Date</th><th>Branch</th><th>Category</th><th>Product / Description</th><th>Sales</th><th>Downpayment</th><th>Remaining Balance</th><th>Expenses</th><th>Action</th></tr></thead><tbody id="salesExpenseRows"></tbody></table></section></main><script>
-const SUPABASE_URL='https://vxuuzinieabzekcandgv.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY='sb_publishable_rh6yxIhUHEkBkpyZtqz5pQ_lIHYyAX4';
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
-let cloudProfile=null, cloudMoves=[], cloudExpenses=[], cloudAttendance=[], cloudRestockRequests=[];
-async function cloudProfileLoad(){
- const {data:{user}}=await sb.auth.getUser(); if(!user){cloudProfile=null;return null;}
- const {data,error}=await sb.from('app_users').select('user_id,role,branch_id,employee_id,enabled').eq('user_id',user.id).single();
- if(error) throw error; cloudProfile=data; return data;
-}
-async function cloudBranchName(id){if(!id)return '';const {data}=await sb.from('branches').select('name').eq('id',id).single();return data?.name||'';}
-async function refreshCloud(){
- if(!cloudProfile)return;
- const requestsQuery=sb.from('restock_requests').select('*').order('created_at',{ascending:false});
- const [m,e,a,r]=await Promise.all([
-   sb.from('stock_movements').select('*').order('created_at',{ascending:false}),
-   sb.from('branch_expenses').select('*').order('created_at',{ascending:false}),
-   sb.from('attendance').select('*').order('attendance_time',{ascending:false}),
-   requestsQuery
- ]);
- cloudMoves=m.data||[];
- cloudExpenses=e.data||[];
- cloudAttendance=a.data||[];
- cloudRestockRequests=r.data||[];
-}
-function isAdmin(){return cloudProfile?.role==='ADMIN'&&cloudProfile?.enabled===true;}
-async function adminLogin(){
- loginMsg.textContent='Signing in...';
- const email=document.getElementById('adminEmail').value.trim(),password=adminPass.value;
- const {error}=await sb.auth.signInWithPassword({email,password});if(error){loginMsg.textContent=error.message;return;}
- try{await cloudProfileLoad();if(!isAdmin()){await sb.auth.signOut();cloudProfile=null;loginMsg.textContent='This account is not authorized as ADMIN.';return;}await refreshCloud();document.getElementById('adminLogin').classList.add('hidden');stockNav.classList.remove('hidden');currentStockNav.classList.remove('hidden');summaryNav.classList.remove('hidden');logoutBtn.classList.remove('hidden');show('admin');render();}catch(e){loginMsg.textContent=e.message;}
-}
-async function adminLogout(){await sb.auth.signOut();cloudProfile=null;stockNav.classList.add('hidden');currentStockNav.classList.add('hidden');summaryNav.classList.add('hidden');logoutBtn.classList.add('hidden');openBranchLogin();}
-function openBranchLogin(){document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));document.getElementById('adminLogin').classList.add('hidden');document.getElementById('branchLogin').classList.remove('hidden');}
-async function doBranchLogin(){
- branchLoginMsg.textContent='Signing in...';
- const email=branchUser.value.trim(),password=branchPass.value;
- const {error}=await sb.auth.signInWithPassword({email,password});
- if(error){branchLoginMsg.textContent=error.message;return;}
- try{
-   await cloudProfileLoad();
-   if(cloudProfile?.role!=='BRANCH'||!cloudProfile.enabled){
-     await sb.auth.signOut();cloudProfile=null;
-     branchLoginMsg.textContent='This account is not an enabled BRANCH account.';
-     return;
-   }
-   const branch=await cloudBranchName(cloudProfile.branch_id);
-   sessionStorage.setItem('branchSession',branch);
-   await refreshCloud();
-   branchLogin.classList.add('hidden');
-   branchPanel.classList.remove('hidden');
-   branchPanelName.textContent=branch;
-   initBranchMovementDate();
-   initExpenseDate();
-   initRestockRequestDate();
-   initSwapUI();
-   updateBranchProducts('');
-   cleanBranchTab('dashboard',document.querySelector('.branch-tab-btn'));
- }catch(e){branchLoginMsg.textContent=e.message;}
-}
-async function branchLogout(){await sb.auth.signOut();cloudProfile=null;sessionStorage.removeItem('branchSession');branchPanel.classList.add('hidden');branchLogin.classList.remove('hidden');}
+                        <div class="bg-rose-50 p-4 rounded-xl border border-rose-200 space-y-2">
+                            <span class="font-bold text-rose-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-minus-circle"></i> Case Removed (Deduct Stock)
+                            </span>
+                            <select id="swapRemovedProduct" required class="w-full p-2.5 bg-white border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                                <!-- Dynamic Clear Cases -->
+                            </select>
+                        </div>
 
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 space-y-2">
+                            <span class="font-bold text-emerald-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus-circle"></i> Case Added (Add Stock)
+                            </span>
+                            <select id="swapAddedProduct" required class="w-full p-2.5 bg-white border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <!-- Dynamic Clear Cases -->
+                            </select>
+                        </div>
 
-async function saveBranchExpense(){
- if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');let expense_date=expenseDate.value,description=expenseDescription.value.trim(),amount=Number(expenseAmount.value),notes=expenseNotes.value.trim(),branch_name=branchPanelName.textContent;if(!expense_date||!description||Number.isNaN(amount))return alert('Please complete date, expense description, and amount.');
- const {error}=await sb.from('branch_expenses').insert({branch_id:cloudProfile.branch_id,branch_name,expense_date,description,amount,notes});if(error)return alert(error.message);expenseDescription.value='';expenseAmount.value='';expenseNotes.value='';await refreshCloud();renderBranchExpenses();render();alert('Expense successfully entered.');
-}
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Swap Quantity *</label>
+                            <input type="number" id="swapQty" min="1" value="1" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
 
-async function addMovement(){
- if(!isAdmin())return alert('Admin access required.');let productValue=product.value,categoryValue=category.value,dateValue=movementDate.value,branchValue=movementBranch.value;if(!dateValue||!branchValue||!categoryValue||!productValue)return alert('Please select date, branch, category and product.');
- let {data:b,error:be}=await sb.from('branches').select('id,name').eq('name',branchValue).single();if(be)return alert(be.message);let movementValue=movement.value,directionValue=direction.value;
- const {error}=await sb.from('stock_movements').insert({branch_id:b.id,branch_name:b.name,employee_name:'ADMIN',movement_date:dateValue,product:productValue,category:categoryValue,movement:movementValue,direction:directionValue,quantity:Number(qty.value),notes:notes.value,amount:0});if(error)return alert(error.message);await refreshCloud();render();
-}
-async function deleteMovementById(id){if(!isAdmin())return alert('Admin access required.');let x=cloudMoves.find(v=>String(v.id)===String(id));let detail=x?'Date: '+x.movement_date+'\nBranch: '+x.branch_name+'\nCategory: '+x.category+'\nProduct: '+x.product+'\nMovement: '+x.movement+'\nDirection: '+x.direction+'\nQuantity: '+x.quantity:'';if(!confirm('Delete this movement record?\n\n'+detail))return;const {error}=await sb.from('stock_movements').delete().eq('id',id);if(error)return alert(error.message);await refreshCloud();render();}
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Notes / Reason for Swap</label>
+                            <input type="text" id="swapNotes" placeholder="e.g. Model exchange request by customer" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
 
+                        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-lg transition text-sm shadow-md">
+                            Execute Case Swap
+                        </button>
+                    </form>
+                </div>
+            </div>
 
+            <!-- BRANCH TAB 5: Branch Related Expenses -->
+            <div id="branchTabExpenses" class="hidden space-y-5">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm h-fit space-y-4">
+                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-receipt text-brand-500"></i> Log Branch Expense
+                        </h3>
+                        <form id="branchExpenseForm" onsubmit="handleBranchExpenseSubmit(event)" class="space-y-4 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Date *</label>
+                                <input type="date" id="expDate" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Expense Description *</label>
+                                <input type="text" id="expDesc" required placeholder="e.g. Store Utility / Snacks / Fare" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Amount (₱) *</label>
+                                <input type="number" id="expAmount" min="0.01" step="0.01" required placeholder="0.00" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Expense Notes</label>
+                                <input type="text" id="expNotes" placeholder="Receipt # or person paid..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
+                                Save Expense (Deducts Cash)
+                            </button>
+                        </form>
+                    </div>
 
-async function deleteCloudSalesExpense(kind,id){if(!isAdmin())return alert('Admin access required.');let label=kind==='sale'?'sales transaction':'expense entry';if(!confirm('Delete this '+label+' permanently? This action cannot be undone.'))return;let table=kind==='sale'?'stock_movements':'branch_expenses';const {error}=await sb.from(table).delete().eq('id',id);if(error)return alert(error.message);await refreshCloud();render();alert('Entry successfully deleted.');}
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-200">
+                            <h3 class="font-bold text-slate-800 text-base">Expense Records</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Date</th>
+                                        <th class="p-3">Description</th>
+                                        <th class="p-3">Notes</th>
+                                        <th class="p-3 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branchExpensesTableBody" class="divide-y divide-slate-200">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-function movementBadge(v){
- const cls='mv-'+String(v||'').toLowerCase().replaceAll(' ','-');
- return `<span class="mv-badge ${cls}">${v||''}</span>`;
-}
-function branchOnlyMoves(){
- const branch=sessionStorage.getItem('branchSession');
- return cloudMoves.filter(x=>x.branch_name===branch);
-}
-function renderBranchDashboard(){
- const body=document.getElementById('dashboardRows'),count=document.getElementById('dashboardCount');
- if(!body)return;
- const branch=sessionStorage.getItem('branchSession');
- if(!branch){body.innerHTML='<tr><td colspan="9">Branch login required.</td></tr>';return;}
- const from=document.getElementById('dashboardFrom')?.value||'';
- const to=document.getElementById('dashboardTo')?.value||'';
- const cat=document.getElementById('dashboardCategory')?.value||'';
- const mov=document.getElementById('dashboardMovement')?.value||'';
- const data=branchOnlyMoves().filter(x=>
-   (!from||(x.movement_date||'')>=from)&&(!to||(x.movement_date||'')<=to)&&(!cat||x.category===cat)&&(!mov||x.movement===mov)
- ).sort((a,b)=>(b.movement_date||'').localeCompare(a.movement_date||'')||(b.created_at||'').localeCompare(a.created_at||''));
- count.textContent=data.length+' matching transaction'+(data.length===1?'':'s');
- body.innerHTML=data.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${movementBadge(x.movement)}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td>${Number(x.amount||0).toFixed(2)}</td><td>${x.payment_method||''}</td><td>${cleanMovementNotes(x.notes)}</td></tr>`).join('')||'<tr><td colspan="9">No matching transactions found.</td></tr>';
-}
-function clearDashboardFilters(){
- dashboardCategory.value='';dashboardMovement.value='';dashboardFrom.value='';dashboardTo.value='';renderBranchDashboard();
-}
-function clearBranchHistoryFilters(){
- bmCategory.value='';bmFrom.value='';bmTo.value='';renderBMHistory();
-}
-function renderBMHistory(){
- const body=document.getElementById('bmRows');
- if(!body)return;
- const branch=sessionStorage.getItem('branchSession');
- if(!branch){body.innerHTML='<tr><td colspan="7">Branch login required.</td></tr>';return;}
- const c=bmCategory.value||'',f=bmFrom.value||'',t=bmTo.value||'';
- const data=branchOnlyMoves().filter(x=>x.movement!=='SWAP'&&(!c||x.category===c)&&(!f||x.movement_date>=f)&&(!t||x.movement_date<=t))
-   .sort((a,b)=>(b.movement_date||'').localeCompare(a.movement_date||'')||(b.created_at||'').localeCompare(a.created_at||''));
- body.innerHTML=data.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${movementBadge(x.movement)}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td>${Number(x.amount||0).toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="7">No matching stock movements.</td></tr>';
-}
-function renderSwapOnly(){
- const body=document.getElementById('swapRows');if(!body)return;
- const data=branchOnlyMoves().filter(x=>x.movement==='SWAP').sort((a,b)=>(b.movement_date||'').localeCompare(a.movement_date||''));
- body.innerHTML=data.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.product||''}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td>${cleanMovementNotes(x.notes)}</td></tr>`).join('')||'<tr><td colspan="5">No clear case swap transactions.</td></tr>';
-}
-function renderBranchExpenses(){
- const box=document.getElementById('branchExpenseList'),branch=sessionStorage.getItem('branchSession');
- if(!box||!branch)return;
- const f=document.getElementById('beFrom')?.value||'',t=document.getElementById('beTo')?.value||'';
- const data=cloudExpenses.filter(x=>x.branch_name===branch&&(!f||x.expense_date>=f)&&(!t||x.expense_date<=t))
-   .sort((a,b)=>(b.expense_date||'').localeCompare(a.expense_date||''));
- box.innerHTML=data.length?'<table><thead><tr><th>Date</th><th>Expense</th><th>Amount</th><th>Notes</th></tr></thead><tbody>'+
- data.map(x=>`<tr><td>${x.expense_date}</td><td>${x.description||''}</td><td>${Number(x.amount||0).toFixed(2)}</td><td>${x.notes||''}</td></tr>`).join('')+
- '</tbody></table>':'<small>No matching branch expenses.</small>';
-}
-function initRestockRequestDate(){
- const e=document.getElementById('restockRequestDate');
- if(e&&!e.value){const d=new Date();e.value=d.toISOString().slice(0,10);}
-}
-function updateRestockRequestProducts(category){
- const p=document.getElementById('restockRequestProduct');if(!p)return;
- const list=category?allProductsByCategory(category):[];
- p.innerHTML='<option value="">Select Product</option>'+[...new Set(list)].map(x=>`<option>${x}</option>`).join('');
-}
-function renderApprovedRestocks(){
- const box=document.getElementById('branchApprovedRestocks');if(!box)return;
- const branch=sessionStorage.getItem('branchSession');
- const data=cloudRestockRequests.filter(x=>x.branch_name===branch&&x.status==='APPROVED')
-   .sort((a,b)=>(b.request_date||'').localeCompare(a.request_date||''));
- box.innerHTML=data.length?'<table><thead><tr><th>Approved Date</th><th>Category</th><th>Product</th><th>Quantity</th><th>Status</th></tr></thead><tbody>'+
- data.map(x=>`<tr><td>${x.request_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${x.requested_quantity||''}</td><td><span class="status-badge approved">APPROVED</span></td></tr>`).join('')+
- '</tbody></table>':'<small>No approved RESTOCK transactions yet.</small>';
-}function renderMyInventory(){
+            <!-- BRANCH TAB 6: Restock Request -->
+            <div id="branchTabRestock" class="hidden space-y-5">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm h-fit space-y-4">
+                        <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane text-brand-500"></i> Request Inventory Restock
+                        </h3>
+                        <form id="branchRestockForm" onsubmit="handleBranchRestockSubmit(event)" class="space-y-4 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Request Date *</label>
+                                <input type="date" id="reqDate" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Product *</label>
+                                <select id="reqProduct" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                                    <!-- Dynamic options -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Quantity Needed *</label>
+                                <input type="number" id="reqQty" min="1" value="10" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Reason / Notes</label>
+                                <input type="text" id="reqNotes" placeholder="e.g. Fast seller, almost depleted..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            </div>
+                            <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-2.5 rounded-lg transition shadow-sm">
+                                Submit Request to Admin
+                            </button>
+                        </form>
+                    </div>
 
- const body=document.getElementById('inventoryRows');
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-200">
+                            <h3 class="font-bold text-slate-800 text-base">Branch Restock Request Log</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Date</th>
+                                        <th class="p-3">Product Name</th>
+                                        <th class="p-3 text-right">Requested Qty</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3">Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branchRestockTableBody" class="divide-y divide-slate-200">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
- if(!body)return;
+    </main>
 
- const branch=sessionStorage.getItem('branchSession');
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
+        Multi-Branch Inventory & Sales System &copy; 2026. All local data is saved in LocalStorage.
+    </footer>
 
- let stock={};
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- SEED / DEFAULT DATA ---
+        const DEFAULT_PRODUCTS = [
+            { id: "P101", name: "iPhone 14 Pro Max Clear Case", category: "CLEAR CASE", price: 350 },
+            { id: "P102", name: "iPhone 15 Pro Clear Case", category: "CLEAR CASE", price: 350 },
+            { id: "P103", name: "Samsung S24 Ultra Silicone Case", category: "SILICONE CASE", price: 400 },
+            { id: "P104", name: "iPhone 13 Tempered Glass 9H", category: "TEMPERED GLASS", price: 150 },
+            { id: "P105", name: "Generic Powerbank 10000mAh", category: "GENERAL UNITS", price: 890 }
+        ];
+const USERS = {
+    ADMIN: "admin123",
 
- cloudMoves
- .filter(x=>x.branch_name===branch)
- .forEach(x=>{
+    BATAAN: "bataan123",
+    CONCEPCION: "concepcion123",
+    CAPAS: "capas123",
+    GUIMBA: "guimba123",
+    PANIQUI: "paniqui123",
 
-   const key=x.category+'|'+x.product;
-
-   if(!stock[key]){
-      stock[key]={
-         category:x.category,
-         product:x.product,
-         qty:0
-      };
-   }
-
-   stock[key].qty +=
-      x.direction==='IN'
-      ? Number(x.quantity||0)
-      : -Number(x.quantity||0);
-
- });
-
- const data=Object.values(stock)
-.sort((a,b)=>a.qty-b.qty);
-
- document.getElementById('invProducts').textContent=data.length;
-
- document.getElementById('invUnits').textContent=
- data.reduce((n,x)=>n+x.qty,0);
-
- document.getElementById('invLow').textContent=
- data.filter(x=>x.qty>0 && x.qty<=5).length;
-
- document.getElementById('invZero').textContent=
- data.filter(x=>x.qty<=0).length;
-
- body.innerHTML=data.map(x=>`
-
- <tr>
-   <td>${x.category}</td>
-   <td>${x.product}</td>
-   <td>
-<b style="color:${
-x.qty<=0 ? 'red' :
-x.qty<=5 ? 'orange' :
-'green'
-}">
-${x.qty}
-</b>
-</td>
- </tr>
-
- `).join('') ||
-
- `
- <tr>
-   <td colspan="3">
-      No inventory records found.
-   </td>
- </tr>
- `;
-}
-function cleanBranchTab(name,btn){
- document.querySelectorAll('.clean-branch-pane').forEach(x=>x.classList.remove('active'));
- document.querySelectorAll('.branch-tab-btn').forEach(x=>x.classList.remove('active'));
- const pane=document.getElementById('clean-'+name);
- if(pane)pane.classList.add('active');
- if(btn)btn.classList.add('active');
- if(name==='dashboard')renderBranchDashboard();
-if(name==='inventory')renderMyInventory();
- if(name==='movement'){renderBMHistory();renderApprovedRestocks();}
- if(name==='swap')renderSwapOnly();
- if(name==='expenses')renderBranchExpenses();
- if(name==='restock'){initRestockRequestDate();updateRestockRequestProducts(restockRequestCategory.value);renderMyRestockRequests();}
-}s
-function renderMyRestockRequests(){
- const box=document.getElementById('myRestockRequests');if(!box)return;
- const branch=sessionStorage.getItem('branchSession');
- const data=cloudRestockRequests.filter(x=>x.branch_name===branch).sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
- box.innerHTML=data.length?'<table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Qty</th><th>Status</th><th>Reason / Notes</th></tr></thead><tbody>'+
- data.map(x=>`<tr><td>${x.request_date||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${x.requested_quantity||''}</td><td><span class="status-badge ${String(x.status||'').toLowerCase()}">${x.status||''}</span></td><td>${x.reason_notes||''}</td></tr>`).join('')+
- '</tbody></table>':'<small>No restock requests yet.</small>';
-}
-async function prepareRestockRequest(){
- if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');
- const request_date=restockRequestDate.value,category=restockRequestCategory.value,product=restockRequestProduct.value;
- const requested_quantity=Number(restockRequestQty.value),reason_notes=restockRequestNotes.value.trim();
- const branch_name=sessionStorage.getItem('branchSession');
- if(!request_date||!category||!product||!Number.isInteger(requested_quantity)||requested_quantity<=0)return alert('Please complete date, category, product, and a whole-number requested quantity.');
- if(!confirm('Prepare this Restock Request?\n\nBranch: '+branch_name+'\nProduct: '+product+'\nQuantity: '+requested_quantity))return;
- const {data:user}=await sb.auth.getUser();
- const {error}=await sb.from('restock_requests').insert({
-   request_date,branch_id:cloudProfile.branch_id,branch_name,requested_by:user?.user?.id||null,
-   category,product,requested_quantity,reason_notes,status:'PENDING'
- });
- if(error)return alert(error.message);
- restockRequestQty.value=1;restockRequestNotes.value='';
- await refreshCloud();renderMyRestockRequests();render();
- alert('Restock Request submitted as PENDING. Inventory was not changed.');
-}
-async function renderRestockApproval(){
- const body=document.getElementById('restockApprovalRows'),count=document.getElementById('restockApprovalCount');
- if(!body||!isAdmin())return;
- const data=cloudRestockRequests.slice().sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
- count.textContent=data.length+' request'+(data.length===1?'':'s');
- body.innerHTML=data.map(x=>{
-   const controls=x.status==='PENDING'
-    ? `<button onclick="approveRestock('${x.id}')">APPROVE</button><button class="out" onclick="rejectRestock('${x.id}')">REJECT</button>`
-    : '<span class="muted">No action</span>';
-   return `<tr><td>${x.request_date||''}</td><td>${x.branch_name||''}</td><td>${x.category||''}</td><td>${x.product||''}</td><td>${x.requested_quantity||''}</td><td>${x.reason_notes||''}</td><td><span class="status-badge ${String(x.status||'').toLowerCase()}">${x.status||''}</span></td><td>${controls}</td></tr>`;
- }).join('')||'<tr><td colspan="8">No restock requests.</td></tr>';
-}
-async function approveRestock(id){
- if(!isAdmin())return alert('Admin access required.');
- if(!confirm('Approve this Restock Request? This will create exactly one RESTOCK / IN stock movement.'))return;
- const {error}=await sb.rpc('approve_restock_request',{p_request_id:id});
- if(error)return alert(error.message);
- await refreshCloud();renderRestockApproval();renderCurrentStock();render();
- alert('Restock Request approved. One RESTOCK / IN movement was created.');
-}
-async function rejectRestock(id){
- if(!isAdmin())return alert('Admin access required.');
- if(!confirm('Reject this Restock Request? No inventory will be added.'))return;
- const {error}=await sb.rpc('reject_restock_request',{p_request_id:id});
- if(error)return alert(error.message);
- await refreshCloud();renderRestockApproval();render();
- alert('Restock Request rejected. No inventory was changed.');
-}
-async function saveClearCaseSwap(){
- if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');
- let date=swapDate.value,fromCase=swapFromCase.value,toCase=swapToCase.value,qty=Number(swapQty.value),notes=swapNotes.value.trim();
- if(!date||!fromCase||!toCase||!qty)return alert('Please complete date, case removed, case added, and quantity.');
- if(fromCase===toCase)return alert('Case Removed and Case Added must be different.');
- if(!Number.isInteger(qty)||qty<=0)return alert('Quantity must be a whole number greater than zero.');
- if(!confirm('Save clear case swap?\n\n'+fromCase+' -'+qty+'\n'+toCase+' +'+qty))return;
- const {error}=await sb.rpc('branch_clear_case_swap',{p_movement_date:date,p_from_product:fromCase,p_to_product:toCase,p_quantity:qty,p_notes:notes||null});
- if(error)return alert(error.message);
- swapNotes.value='';
- await refreshCloud();
- renderBranchHistory();
- render();
- alert('Clear case swap saved. '+fromCase+' -'+qty+', '+toCase+' +'+qty+'.');
-}
-
-async function saveBranchMovement(){
- if(cloudProfile?.role!=='BRANCH')return alert('Branch login required.');
- const type=branchMovement.value;
- if(type==='RESTOCK')return alert('RESTOCK is read-only. It is created only after Admin approval.');
- const allowed=['SOLD','TRANSFERRED','PULL OUT','FREEBIES','BACK JOB'];
- if(!allowed.includes(type))return alert('Movement not allowed.');
- const date=branchMovementDate.value,category=branchMoveCategory.value,product=branchMoveProduct.value;
- const qty=Number(branchMoveQty.value),amount=Number(branchAmount.value||0);
- const downpayment=Number(branchDownpayment.value||0),payment_method=branchPaymentMethod.value.trim();
- const notes=branchMoveNotes.value.trim(),branch_name=branchPanelName.textContent;
- const directionValue=type==='BACK JOB'?branchBackJobDirection.value:'OUT';
- if(!date||!category||!product||!Number.isInteger(qty)||qty<=0)return alert('Please complete date, category, product, and a whole-number quantity.');
- if(downpayment<0||downpayment>amount)return alert('Downpayment must be between 0 and the Amount.');
- if(directionValue==='OUT'){
-   const available=stockFor(branch_name,category,product);
-   if(qty>available)return alert('INSUFFICIENT STOCK\nAvailable: '+available+' pcs\nRequested OUT: '+qty+' pcs');
- }
- if(!confirm('Do you want to add this transaction?'))return;
- const savedNotes=(notes?notes+' | ':'')+'DOWNPAYMENT: '+downpayment.toFixed(2);
- const {error}=await sb.from('stock_movements').insert({
-   branch_id:cloudProfile.branch_id,branch_name,employee_name:'BRANCH LOGIN',
-   movement_date:date,category,product,movement:type,direction:directionValue,
-   quantity:qty,amount,payment_method,notes:savedNotes
- });
- if(error)return alert(error.message);
- branchMoveQty.value=1;branchAmount.value='';branchDownpayment.value='';
- branchPaymentMethod.value='';branchMoveNotes.value='';
- await refreshCloud();
- render();
- alert('Transaction successfully entered.');
-}
-
-
-function renderCurrentStock(){let sbx=currentStockBranch,rows=currentStockRows,kpis=currentStockKpis;if(!sbx||!rows)return;let old=sbx.value,names=[...new Set(cloudMoves.map(x=>x.branch_name).filter(Boolean))];sbx.innerHTML='<option value="">All branches</option>'+names.map(x=>`<option>${x}</option>`).join('');if(names.includes(old))sbx.value=old;fillCategorySelect('currentStockCategory');let branch=sbx.value,cat=currentStockCategory.value,q=(currentStockProduct.value||'').toLowerCase(),data={};cloudMoves.forEach(x=>{let key=x.branch_name+'|'+x.product+'|'+x.category;if(!data[key])data[key]={branch:x.branch_name,product:x.product,category:x.category,stock:0};data[key].stock+=x.direction==='IN'?Number(x.quantity||0):-Number(x.quantity||0)});let list=Object.values(data).filter(x=>(!branch||x.branch===branch)&&(!cat||x.category===cat)&&(!q||x.product.toLowerCase().includes(q)));rows.innerHTML=list.map(x=>`<tr class="${x.stock===0?'stock-zero':x.stock<=5?'stock-low':'stock-ok'}"><td>${x.branch}</td><td>${x.product}</td><td>${x.category}</td><td><b>${x.stock}</b></td></tr>`).join('')||'<tr><td colspan="4">No stock records found.</td></tr>';kpis.innerHTML=`<div class="kpi"><b>${list.length}</b><br>Products</div><div class="kpi"><b>${list.reduce((n,x)=>n+x.stock,0)}</b><br>Total Current Stock</div>`;renderSalesPeriod();}
-function clearCurrentStockFilters(){currentStockBranch.value='';currentStockCategory.value='';currentStockProduct.value='';renderCurrentStock();}
-function salesPeriodSelection(){let branch=salesPeriodBranch.value,cat=salesPeriodCategory.value,p=(salesPeriodProduct.value||'').toLowerCase(),from=salesPeriodFrom.value,to=salesPeriodTo.value;return cloudMoves.filter(x=>x.movement==='SOLD'&&(!branch||x.branch_name===branch)&&(!cat||x.category===cat)&&(!p||(x.product||'').toLowerCase().includes(p))&&(!from||x.movement_date>=from)&&(!to||x.movement_date<=to));}
-function renderSalesPeriod(){let b=document.getElementById('salesPeriodBranch');if(!b)return;let old=b.value,names=[...new Set(cloudMoves.map(x=>x.branch_name).filter(Boolean))];b.innerHTML='<option value="">All branches</option>'+names.map(x=>`<option>${x}</option>`).join('');if(names.includes(old))b.value=old;fillCategorySelect('salesPeriodCategory');let a=salesPeriodSelection(),units=a.reduce((n,x)=>n+Number(x.quantity||0),0),gross=a.reduce((n,x)=>n+Number(x.amount||0),0),dp=a.reduce((n,x)=>n+movementDownpayment(x),0),cats=new Set(a.map(x=>x.category)),prods=new Set(a.map(x=>x.product));salesPeriodKpis.innerHTML=`<div class="kpi"><b>${units}</b><br>Total Units Sold</div><div class="kpi"><b>${gross.toFixed(2)}</b><br>Gross Sales</div><div class="kpi"><b>${dp.toFixed(2)}</b><br>Downpayments</div><div class="kpi"><b>${Math.max(0,gross-dp).toFixed(2)}</b><br>Outstanding Balance</div><div class="kpi"><b>${cats.size}</b><br>Categories With Sales</div><div class="kpi"><b>${prods.size}</b><br>Products Sold</div>`;let cg={};APP_CATEGORIES.forEach(c=>cg[c]=0);a.forEach(x=>cg[x.category]=(cg[x.category]||0)+Number(x.quantity||0));salesCategoryRows.innerHTML=APP_CATEGORIES.map(c=>`<tr><td>${c}</td><td>${cg[c]||0}</td></tr>`).join('');let pg={};a.forEach(x=>{let k=x.branch_name+'|'+x.category+'|'+x.product;if(!pg[k])pg[k]={branch:x.branch_name,category:x.category,product:x.product,units:0,amount:0};pg[k].units+=Number(x.quantity||0);pg[k].amount+=Number(x.amount||0)});let pl=Object.values(pg).sort((a,b)=>b.units-a.units);salesProductRows.innerHTML=pl.map(x=>`<tr><td>${x.branch}</td><td>${x.category}</td><td>${x.product}</td><td>${x.units}</td><td>${x.amount.toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="5">No SOLD transactions found.</td></tr>';let tp={};a.forEach(x=>{let k=x.category+'|'+x.product;if(!tp[k])tp[k]={category:x.category,product:x.product,units:0,amount:0};tp[k].units+=Number(x.quantity||0);tp[k].amount+=Number(x.amount||0)});topSellingRows.innerHTML=Object.values(tp).sort((a,b)=>b.units-a.units).map((x,i)=>`<tr><td>${i+1}</td><td>${x.product}</td><td>${x.category}</td><td>${x.units}</td><td>${x.amount.toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="5">No SOLD transactions found.</td></tr>';}
-function applySalesMonth(){let m=Number(salesPeriodMonth.value),y=Number(salesPeriodYear.value);if(!m||!y)return;let last=new Date(y,m,0).getDate();salesPeriodFrom.value=`${y}-${String(m).padStart(2,'0')}-01`;salesPeriodTo.value=`${y}-${String(m).padStart(2,'0')}-${String(last).padStart(2,'0')}`;renderSalesPeriod();}
-function clearSalesPeriodFilters(){['salesPeriodBranch','salesPeriodCategory','salesPeriodProduct','salesPeriodFrom','salesPeriodTo','salesPeriodMonth','salesPeriodYear'].forEach(id=>document.getElementById(id).value='');renderSalesPeriod();}
-function exportSalesCSV(){let a=salesPeriodSelection();if(!a.length)return alert('No SOLD transactions match the filters.');let head=['Date','Branch','Category','Product','Quantity Sold','Amount','Downpayment','Remaining Balance'];let rows=a.map(x=>{let dp=movementDownpayment(x),amt=Number(x.amount||0);return [x.movement_date,x.branch_name,x.category,x.product,x.quantity,amt.toFixed(2),dp.toFixed(2),Math.max(0,amt-dp).toFixed(2)]});downloadCSV('monthly_sales.csv',[head,...rows]);}
-function renderSalesExpenseSummary(){let rows=salesExpenseRows,kpis=salesExpenseKpis;if(!rows||!kpis)return;let old=sumBranch.value,names=[...new Set(cloudMoves.map(x=>x.branch_name).filter(Boolean))];sumBranch.innerHTML='<option value="">All branches</option>'+names.map(x=>`<option>${x}</option>`).join('');if(names.includes(old))sumBranch.value=old;fillCategorySelect('sumCategory');let branch=sumBranch.value,cat=sumCategory.value,from=sumFrom.value,to=sumTo.value,inRange=d=>(!from||d>=from)&&(!to||d<=to);let sales=cloudMoves.filter(x=>x.movement==='SOLD'&&(!branch||x.branch_name===branch)&&(!cat||x.category===cat)&&inRange(x.movement_date));let ex=cloudExpenses.filter(x=>(!branch||x.branch_name===branch)&&inRange(x.expense_date));let st=sales.reduce((n,x)=>n+Number(x.amount||0),0),dt=sales.reduce((n,x)=>n+movementDownpayment(x),0),et=ex.reduce((n,x)=>n+Number(x.amount||0),0);kpis.innerHTML=`<div class="kpi"><b>${st.toFixed(2)}</b><br>Total Sales</div><div class="kpi"><b>${dt.toFixed(2)}</b><br>Total Downpayment</div><div class="kpi"><b>${Math.max(0,st-dt).toFixed(2)}</b><br>Outstanding Balance</div><div class="kpi"><b>${et.toFixed(2)}</b><br>Total Expenses</div>`;let list=[...sales.map(x=>({kind:'sale',id:x.id,date:x.movement_date,branch:x.branch_name,category:x.category,description:x.product||'Sale',sales:Number(x.amount||0),downpayment:movementDownpayment(x),expenses:0})),...ex.map(x=>({kind:'expense',id:x.id,date:x.expense_date,branch:x.branch_name,category:'',description:x.description||'Expense',sales:0,downpayment:0,expenses:Number(x.amount||0)}))].sort((a,b)=>b.date.localeCompare(a.date));rows.innerHTML=list.map(x=>`<tr><td>${x.date}</td><td>${x.branch}</td><td>${x.category}</td><td>${x.description}</td><td>${x.sales?x.sales.toFixed(2):''}</td><td>${x.downpayment?x.downpayment.toFixed(2):''}</td><td>${x.sales?Math.max(0,x.sales-x.downpayment).toFixed(2):''}</td><td>${x.expenses?x.expenses.toFixed(2):''}</td><td>${isAdmin()?`<button class="out" onclick="deleteCloudSalesExpense('${x.kind}','${x.id}')">Delete</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9">No sales or expenses found.</td></tr>';}
-function clearSalesExpenseFilters(){sumBranch.value='';sumCategory.value='';sumFrom.value='';sumTo.value='';renderSalesExpenseSummary();}
-function downloadCSV(name,rows){let esc=v=>'"'+String(v??'').replaceAll('"','""')+'"',csv=rows.map(r=>r.map(esc).join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
-function archiveSelection(){let f=archiveFrom.value,t=archiveTo.value,b=archiveBranch.value;return cloudMoves.filter(x=>(!f||x.movement_date>=f)&&(!t||x.movement_date<=t)&&(!b||x.branch_name===b));}
-function exportArchiveCSV(){if(!isAdmin())return alert('Admin access required.');let a=archiveSelection();if(!a.length)return alert('No transactions found.');downloadCSV('stock_transactions_archive.csv',[['ID','Date','Branch','Employee','Category','Product','Movement','Direction','Quantity','Amount','Payment Method','Notes','Created At'],...a.map(x=>[x.id,x.movement_date,x.branch_name,x.employee_name,x.category,x.product,x.movement,x.direction,x.quantity,x.amount,x.payment_method,x.notes,x.created_at])]);archiveMsg.textContent=a.length+' transactions exported.';}
-async function archiveTransactionsSafe(){if(!isAdmin())return alert('Admin access required.');let a=archiveSelection();if(!a.length)return alert('No transactions found.');if(!archiveFrom.value||!archiveTo.value)return alert('Select both From and To dates.');if(!confirm('Archive-copy '+a.length+' transactions? Active stock movements will NOT be deleted, so Current Stock remains unchanged.'))return;let payload=a.map(x=>({original_id:x.id,branch_id:x.branch_id,branch_name:x.branch_name,employee_name:x.employee_name,movement_date:x.movement_date,category:x.category,product:x.product,movement:x.movement,direction:x.direction,quantity:x.quantity,amount:x.amount,payment_method:x.payment_method,notes:x.notes,created_at:x.created_at}));let {error}=await sb.from('stock_movements_archive').upsert(payload,{onConflict:'original_id'});if(error)return alert('Archive failed. Active transactions were NOT deleted. '+error.message);archiveMsg.textContent=a.length+' transactions safely copied to archive. Active stock history was preserved.';}function togglePassword(id,btn){
- const e=document.getElementById(id);if(!e)return;
- const show=e.type==='password';e.type=show?'text':'password';if(btn)btn.textContent=show?'Hide':'Show';
-}
-const APP_CATEGORIES=['GENERAL UNITS','CLEAR CASE','SILICON CASE','TEMPERED GLASS'];
-const PRODUCT_CATALOG={
- "GENERAL UNITS":["IPHONE UNITS","GIFT BOX","ADAPTOR","CORD","ROBOT CORD","AIRPODS GEN 2","AIRPODS GEN 3","AIRPODS PRO 2","ADAPTOR ACOME","VIVAN POWERBANK","APPLE WATCH","IPHONE 6","REALME TABLET","IPAD MINI 4","IPAD MINI 2","GALAXY A16 B-NEW","GALAXY A16 PRE-OWNED","CORD USB LIGHTNING","INFINIX SMART 10","ANDROID PHONE"],
- "CLEAR CASE":["XS MAX","XR","11","11 PRO","11 PROMAX","12/12PRO","12 PROMAX","13/14/16E","13 PRO","13 PROMAX","14 PRO","14/15 PLUS","14 PROMAX","15","15 PRO","15 PROMAX","16","16 PLUS","16 PRO","16 PROMAX","17","17 PRO","17 PROMAX"],
- "SILICON CASE":["XS MAX","XR","11","11 PRO","11 PROMAX","12/12PRO","12 PROMAX","13/14/16E","13 PRO","13 PROMAX","14 PRO","14/15 PLUS","14 PROMAX","15","15 PRO","15 PROMAX","16","16 PLUS","16 PRO","16 PROMAX","17","17 PRO","17 PROMAX"],
- "TEMPERED GLASS":["TG 11/XR","TG 11 PRO","TG 11 PROMAX","TG 12/12PRO","TG 12 PROMAX","TG 13/14/13PRO/16E","TG 13 PROMAX","TG 14 PRO","TG 14 PROMAX","TG IP 14/15 PLUS","TG 15","TG 15 PRO","TG 15 PROMAX","TG 16","TG 16 PRO","TG 16 PROMAX","TG 16 PLUS","TG 17","TG 17 PRO","TG 17 PROMAX"]
+    ONE: "one123",
+    TWO: "two123",
+    THREE: "three123",
+    FOUR: "four123",
+    FIVE: "five123"
 };
-function allProductsByCategory(c){return PRODUCT_CATALOG[c]||[];}
-function updateBranchProducts(c){
- const p=document.getElementById('branchMoveProduct');if(!p)return;
- const list=c?allProductsByCategory(c):[];
- p.innerHTML='<option value="">Select Product</option>'+list.map(x=>`<option>${x}</option>`).join('');
-}
-function updateProductDropdown(c){
- const p=document.getElementById('product');if(!p)return;
- const list=c?allProductsByCategory(c):Object.values(PRODUCT_CATALOG).flat();
- p.innerHTML='<option value="">Select Product</option>'+[...new Set(list)].map(x=>`<option>${x}</option>`).join('');
-}
-function initMovementDate(){
- const e=document.getElementById('movementDate');if(e&&!e.value)e.value=new Date().toISOString().slice(0,10);
-}
-function initBranchMovementDate(){
- const e=document.getElementById('branchMovementDate');if(e&&!e.value)e.value=new Date().toISOString().slice(0,10);
-}
-function initExpenseDate(){
- const e=document.getElementById('expenseDate');if(e&&!e.value)e.value=new Date().toISOString().slice(0,10);
-}
-function stockFor(branch,category,product){
- return cloudMoves.filter(x=>x.branch_name===branch&&x.category===category&&x.product===product)
- .reduce((n,x)=>n+(x.direction==='IN'?Number(x.quantity||0):-Number(x.quantity||0)),0);
-}
-function cleanMovementNotes(v){return String(v||'').replace(/\s*\|?\s*DOWNPAYMENT:\s*[0-9]+(?:\.[0-9]+)?/ig,'').trim();}
-function movementDownpayment(x){const m=String(x.notes||'').match(/(?:^|\|\s*)DOWNPAYMENT:\s*([0-9]+(?:\.[0-9]+)?)/i);return m?Number(m[1]):0;}
-function fillCategorySelect(id){
- const e=document.getElementById(id);if(!e)return;const old=e.value;
- e.innerHTML='<option value="">All categories</option>'+APP_CATEGORIES.map(c=>`<option>${c}</option>`).join('');
- if(APP_CATEGORIES.includes(old))e.value=old;
-}
-function populateReportFilters(){
- ['invCategory','currentStockCategory','sumCategory','salesPeriodCategory'].forEach(fillCategorySelect);
- const names=[...new Set(cloudMoves.map(x=>x.branch_name).filter(Boolean))];
- ['invBranch','currentStockBranch','sumBranch','salesPeriodBranch','archiveBranch'].forEach(id=>{
-   const e=document.getElementById(id);if(!e)return;const old=e.value;
-   e.innerHTML='<option value="">All branches</option>'+names.map(x=>`<option>${x}</option>`).join('');
-   if(names.includes(old))e.value=old;
- });
-}
-function renderAdminStock(){
- const rows=document.getElementById('inventorySummary'),moves=document.getElementById('moves'),kpis=document.getElementById('inventoryKpis');
- if(!rows)return;
- const a=filteredMoves();
- const totalIn=a.filter(x=>x.direction==='IN').reduce((n,x)=>n+Number(x.quantity||0),0);
- const totalOut=a.filter(x=>x.direction==='OUT').reduce((n,x)=>n+Number(x.quantity||0),0);
- if(kpis)kpis.innerHTML=`<div class="kpi"><b>${a.length}</b><br>Movements</div><div class="kpi"><b>${totalIn}</b><br>Total IN</div><div class="kpi"><b>${totalOut}</b><br>Total OUT</div><div class="kpi"><b>${totalIn-totalOut}</b><br>Net Movement</div>`;
- rows.innerHTML=a.map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.branch_name||''}</td><td>${x.product||''}</td><td>${x.quantity||''}</td><td>${x.category||''}</td><td>${x.movement||''}${x.notes?': '+cleanMovementNotes(x.notes):''}</td><td>${Number(x.amount||0).toFixed(2)}</td><td><button class="out" onclick="deleteMovementById('${x.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="8">No matching stock movements.</td></tr>';
- if(moves)moves.innerHTML=cloudMoves.slice(0,100).map(x=>`<tr><td>${x.movement_date||''}</td><td>${x.branch_name||''}</td><td>${x.product||''}</td><td>${movementBadge(x.movement)}</td><td>${x.direction||''}</td><td>${x.quantity||''}</td><td><button class="out" onclick="deleteMovementById('${x.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="7">No stock movements.</td></tr>';
-}
-function filteredMoves(){
- const b=document.getElementById('invBranch')?.value||'',c=document.getElementById('invCategory')?.value||'';
- const p=(document.getElementById('invProduct')?.value||'').toLowerCase(),t=document.getElementById('invType')?.value||'';
- const d=document.getElementById('invDir')?.value||'',from=document.getElementById('invFrom')?.value||'',to=document.getElementById('invTo')?.value||'';
- return cloudMoves.filter(x=>(!b||x.branch_name===b)&&(!c||x.category===c)&&(!p||(x.product||'').toLowerCase().includes(p))&&(!t||x.movement===t)&&(!d||x.direction===d)&&(!from||(x.movement_date||'')>=from)&&(!to||(x.movement_date||'')<=to));
-}
-function clearInventoryFilters(){
- ['invBranch','invCategory','invProduct','invType','invDir','invFrom','invTo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});renderAdminStock();
-}
-function exportInventoryCSV(){
- const a=filteredMoves();downloadCSV('stock_inventory_report.csv',[['Date','Branch','Product','Category','Movement','Direction','Quantity','Amount','Notes'],...a.map(x=>[x.movement_date,x.branch_name,x.product,x.category,x.movement,x.direction,x.quantity,x.amount,cleanMovementNotes(x.notes)])]);
-}
-function show(id){
- if(['admin','stock','currentStock','salesExpenseSummary'].includes(id)&&!isAdmin())return openAdmin();
- document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));
- const e=document.getElementById(id);if(e)e.classList.remove('hidden');
- if(id==='admin')renderRestockApproval();
- if(id==='stock')renderAdminStock();
- if(id==='currentStock'){renderCurrentStock();renderSalesPeriod();}
- if(id==='salesExpenseSummary')renderSalesExpenseSummary();
-}
-function openAdmin(){
- document.querySelectorAll('section').forEach(x=>x.classList.add('hidden'));
- document.getElementById('branchLogin').classList.add('hidden');
- if(isAdmin()){document.getElementById('admin').classList.remove('hidden');renderRestockApproval();render();}
- else document.getElementById('adminLogin').classList.remove('hidden');
-}
-function initSwapUI(){
- const d=document.getElementById('swapDate');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);
- const cases=allProductsByCategory('CLEAR CASE');
- ['swapFromCase','swapToCase'].forEach(id=>{
-   const e=document.getElementById(id);if(!e)return;const old=e.value;
-   e.innerHTML='<option value="">'+(id==='swapFromCase'?'Case Removed':'Case Added')+'</option>'+cases.map(x=>`<option>${x}</option>`).join('');
-   if(cases.includes(old))e.value=old;
- });
-}
-function render(){
- populateReportFilters();
- renderAdminStock();
- renderCurrentStock();
- renderSalesPeriod();
- renderSalesExpenseSummary();
- renderRestockApproval();
- if(document.getElementById('branchPanel')&&!document.getElementById('branchPanel').classList.contains('hidden')){
-   renderBranchDashboard();renderBMHistory();renderSwapOnly();renderBranchExpenses();renderMyRestockRequests();renderApprovedRestocks();
- }
-}
-function toggleBackJobDirection(){
- const type=branchMovement.value,isBack=type==='BACK JOB',isRestock=type==='RESTOCK';
- branchBackJobDirection.classList.toggle('hidden',!isBack);
- document.getElementById('branchMovementReadOnly').classList.toggle('hidden',!isRestock);
- document.getElementById('branchMovementEntryFields').classList.toggle('hidden',isRestock);
- document.getElementById('saveBranchMovementBtn').classList.toggle('hidden',isRestock);
- if(isRestock)renderApprovedRestocks();
-}
-async function cloudInit(){
- const {data:{session}}=await sb.auth.getSession();
- if(!session){return;}
- try{
-   await cloudProfileLoad();await refreshCloud();
-   if(isAdmin()){
-     stockNav.classList.remove('hidden');currentStockNav.classList.remove('hidden');summaryNav.classList.remove('hidden');logoutBtn.classList.remove('hidden');
-   }else if(cloudProfile?.role==='BRANCH'){
-     const branch=await cloudBranchName(cloudProfile.branch_id);sessionStorage.setItem('branchSession',branch);
-     branchPanel.classList.remove('hidden');branchPanelName.textContent=branch;branchLogin.classList.add('hidden');
-     initBranchMovementDate();initExpenseDate();initRestockRequestDate();initSwapUI();updateBranchProducts('');
-     cleanBranchTab('dashboard',document.querySelector('.branch-tab-btn'));
-   }
-   populateReportFilters();render();
- }catch(e){console.error(e);}
+       const BRANCHES = [
+    "BATAAN",
+    "CONCEPCION",
+    "CAPAS",
+    "GUIMBA",
+    "PANIQUI",
+    "ONE",
+    "TWO",
+    "THREE",
+    "FOUR",
+    "FIVE"
+];
+
+        // --- APP STATE ---
+        let currentRole = "ADMIN";
+        let products = [];
+        let inventory = {}; // { BRANCH: { prodId: qty } }
+        let stockMovements = []; // Array of movement items
+        let restockRequests = []; // Array of restock objects
+        let expenses = []; // Array of expense objects
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+
+    initData();
+
+    setTodayDateInputs();
+
+    const savedUser =
+        localStorage.getItem("loggedUser");
+
+    if(savedUser){
+
+        document.getElementById(
+            "loginScreen"
+        ).style.display = "none";
+
+        switchRole(savedUser);
+
+    }
+
+};
+
+        function setTodayDateInputs() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInputs = ['bMovDate', 'swapDate', 'expDate', 'reqDate'];
+            dateInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = today;
+            });
+        }
+
+        function initData() {
+            const savedProducts = localStorage.getItem('mbis_products');
+            const savedInventory = localStorage.getItem('mbis_inventory');
+            const savedMovements = localStorage.getItem('mbis_movements');
+            const savedRestocks = localStorage.getItem('mbis_restocks');
+            const savedExpenses = localStorage.getItem('mbis_expenses');
+
+            if (savedProducts && savedInventory) {
+                products = JSON.parse(savedProducts);
+                inventory = JSON.parse(savedInventory);
+                stockMovements = savedMovements ? JSON.parse(savedMovements) : [];
+                restockRequests = savedRestocks ? JSON.parse(savedRestocks) : [];
+                expenses = savedExpenses ? JSON.parse(savedExpenses) : [];
+            } else {
+                // Populate default state
+                products = [...DEFAULT_PRODUCTS];
+                inventory = {};
+                BRANCHES.forEach(b => {
+                    inventory[b] = {};
+                    products.forEach(p => {
+                        inventory[b][p.id] = 15; // default starting stock
+                    });
+                });
+
+                // Seed some initial movements
+                const today = new Date().toISOString().split('T')[0];
+                stockMovements = [
+                    { id: 'MOV-1', date: today, branch: 'BATAAN', productId: 'P101', category: 'CLEAR CASE', type: 'SOLD', direction: 'OUT', qty: 2, amount: 700, downpayment: 700, paymentMethod: 'CASH', notes: 'Initial Walkin Sale' },
+                    { id: 'MOV-2', date: today, branch: 'CONCEPCION', productId: 'P103', category: 'SILICONE CASE', type: 'RESTOCK_IN', direction: 'IN', qty: 10, amount: 0, downpayment: 0, paymentMethod: 'CASH', notes: 'Initial Dispatch' }
+                ];
+                saveAllData();
+            }
+        }
+
+        function saveAllData() {
+            localStorage.setItem('mbis_products', JSON.stringify(products));
+            localStorage.setItem('mbis_inventory', JSON.stringify(inventory));
+            localStorage.setItem('mbis_movements', JSON.stringify(stockMovements));
+            localStorage.setItem('mbis_restocks', JSON.stringify(restockRequests));
+            localStorage.setItem('mbis_expenses', JSON.stringify(expenses));
+        }
+
+        function resetDataPrompt() {
+            if (confirm("Reset system back to default initial seed data? This will clear local changes.")) {
+                localStorage.clear();
+                initData();
+                showToast("Data reset to default state.", "info");
+                refreshUI();
+            }
+        }
+
+        // --- ROLE SWITCHING ---
+        function switchRole(role) {
+            currentRole = role;
+            document.getElementById('roleSelector').value = role;
+
+            if (role === 'ADMIN') {
+                document.getElementById('adminWorkspace').classList.remove('hidden');
+                document.getElementById('branchWorkspace').classList.add('hidden');
+                document.getElementById('headerRoleBadge').innerText = "Administrator Workspace";
+                switchAdminTab('movement');
+            } else {
+                document.getElementById('adminWorkspace').classList.add('hidden');
+                document.getElementById('branchWorkspace').classList.remove('hidden');
+                document.getElementById('headerRoleBadge').innerText = `Branch Portal (${role})`;
+                document.getElementById('branchHeaderTitle').innerText = `${role} BRANCH`;
+                switchBranchTab('dashboard');
+            }
+            refreshUI();
+        }
+
+        function refreshUI() {
+            updatePendingRestockBadge();
+            if (currentRole === 'ADMIN') {
+                renderAdminMovements();
+                renderAdminRestockRequests();
+                renderAdminProducts();
+                renderAdminStockTracker();
+                renderAdminSalesSummary();
+                renderAdminCashOnHand();
+            } else {
+                renderBranchHeaderCash();
+                renderBranchDashboard();
+                renderBranchInventory();
+                populateBranchProductSelects();
+                renderBranchExpenses();
+                renderBranchRestockLog();
+            }
+        }
+
+        // --- TOAST NOTIFICATION ---
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-700';
+            toast.className = `${bg} text-white px-4 py-3 rounded-lg shadow-lg text-xs font-semibold flex items-center gap-2 transition duration-300 transform translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // =========================================================================
+        // ADMIN WORKSPACE LOGIC
+        // =========================================================================
+
+        function switchAdminTab(tab) {
+            const tabs = ['movement', 'restock', 'products', 'stock', 'sales', 'cash'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`tab-admin-${t}`);
+                const content = document.getElementById(`adminTab${capitalize(t)}`);
+                if (t === tab) {
+                    navBtn.className = "px-4 py-2.5 rounded-lg transition flex items-center gap-2 bg-brand-50 text-brand-600 font-semibold border-b-2 border-brand-500";
+                    content.classList.remove('hidden');
+                } else {
+                    navBtn.className = "px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50";
+                    content.classList.add('hidden');
+                }
+            });
+            refreshUI();
+        }
+
+        function updatePendingRestockBadge() {
+            const pending = restockRequests.filter(r => r.status === 'PENDING').length;
+            const badge = document.getElementById('pendingRestockBadge');
+            if (pending > 0) {
+                badge.innerText = pending;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // Admin Tab 1: Stock Movement Management
+        function renderAdminMovements() {
+            const branchFilter = document.getElementById('filterMovBranch').value;
+            const catFilter = document.getElementById('filterMovCategory').value;
+            const typeFilter = document.getElementById('filterMovType').value;
+            const dirFilter = document.getElementById('filterMovDirection').value;
+            const startFilter = document.getElementById('filterMovStartDate').value;
+            const endFilter = document.getElementById('filterMovEndDate').value;
+
+            let filtered = stockMovements.filter(m => {
+                if (branchFilter && m.branch !== branchFilter) return false;
+                if (catFilter && m.category !== catFilter) return false;
+                if (typeFilter && m.type !== typeFilter) return false;
+                if (dirFilter && m.direction !== dirFilter) return false;
+                if (startFilter && m.date < startFilter) return false;
+                if (endFilter && m.date > endFilter) return false;
+                return true;
+            });
+
+            // Update Metrics
+            let totalIn = 0;
+            let totalOut = 0;
+            filtered.forEach(m => {
+                if (m.direction === 'IN') totalIn += m.qty;
+                else if (m.direction === 'OUT') totalOut += m.qty;
+            });
+
+            document.getElementById('metricTotalMovements').innerText = filtered.length;
+            document.getElementById('metricTotalIn').innerText = `+${totalIn}`;
+            document.getElementById('metricTotalOut').innerText = `-${totalOut}`;
+            document.getElementById('metricNetMovement').innerText = (totalIn - totalOut);
+
+            // Render Table
+            const tbody = document.getElementById('adminMovementTableBody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="11" class="text-center py-6 text-slate-400">No stock movements found matching filters.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(m => {
+                const prod = products.find(p => p.id === m.productId) || { name: 'Unknown' };
+                const isIn = m.direction === 'IN';
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 text-center">
+                            <input type="checkbox" value="${m.id}" class="movCheckbox rounded border-slate-300">
+                        </td>
+                        <td class="p-3 font-medium text-slate-700">${m.date}</td>
+                        <td class="p-3 font-semibold text-slate-900">${m.branch}</td>
+                        <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-semibold">${m.category}</span></td>
+                        <td class="p-3 font-medium">${prod.name}</td>
+                        <td class="p-3"><span class="bg-brand-50 text-brand-700 px-2 py-0.5 rounded text-[10px] font-bold">${m.type}</span></td>
+                        <td class="p-3">
+                            <span class="${isIn ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'} px-2 py-0.5 rounded font-bold text-[10px]">
+                                ${m.direction}
+                            </span>
+                        </td>
+                        <td class="p-3 text-right font-bold ${isIn ? 'text-emerald-600' : 'text-rose-600'}">${isIn ? '+' : '-'}${m.qty}</td>
+                        <td class="p-3 text-right font-semibold">₱${(m.amount || 0).toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                        <td class="p-3 text-slate-500 max-w-xs truncate">${m.notes || '-'}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="deleteMovement('${m.id}')" class="text-rose-500 hover:text-rose-700 font-semibold p-1" title="Delete record">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function toggleSelectAllMovements(source) {
+            const checkboxes = document.querySelectorAll('.movCheckbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function deleteMovement(id) {
+            if (confirm("Are you sure you want to delete this movement log entry?")) {
+                stockMovements = stockMovements.filter(m => m.id !== id);
+                saveAllData();
+                showToast("Movement entry removed.", "info");
+                refreshUI();
+            }
+        }
+
+        function deleteSelectedMovements() {
+            const checked = Array.from(document.querySelectorAll('.movCheckbox:checked')).map(cb => cb.value);
+            if (checked.length === 0) {
+                showToast("No rows selected for deletion.", "error");
+                return;
+            }
+            if (confirm(`Delete ${checked.length} selected stock movement records?`)) {
+                stockMovements = stockMovements.filter(m => !checked.includes(m.id));
+                saveAllData();
+                showToast(`Deleted ${checked.length} movement records.`, "info");
+                refreshUI();
+            }
+        }
+
+        function exportStockMovementsCSV() {
+            if (stockMovements.length === 0) {
+                showToast("No data to export.", "error");
+                return;
+            }
+            let csv = "ID,Date,Branch,Category,Product,Type,Direction,Qty,Amount,Notes\n";
+            stockMovements.forEach(m => {
+                const prod = products.find(p => p.id === m.productId) || { name: 'Unknown' };
+                csv += `"${m.id}","${m.date}","${m.branch}","${m.category}","${prod.name.replace(/"/g, '""')}","${m.type}","${m.direction}",${m.qty},${m.amount || 0},"${(m.notes || '').replace(/"/g, '""')}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `Stock_Movements_${new Date().toISOString().split('T')[0]}.csv`);
+            a.click();
+            showToast("Exported CSV successfully.");
+        }
+
+        // Admin Tab 2: Restock Requests Approval
+        function renderAdminRestockRequests() {
+            const tbody = document.getElementById('adminRestockTableBody');
+            const pending = restockRequests.filter(r => r.status === 'PENDING');
+
+            if (pending.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">No pending restock requests.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = pending.map(r => {
+                const prod = products.find(p => p.id === r.productId) || { name: 'Unknown', category: 'GENERAL' };
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 text-slate-700">${r.date}</td>
+                        <td class="p-3 font-bold text-slate-900">${r.branch}</td>
+                        <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-semibold">${prod.category}</span></td>
+                        <td class="p-3 font-semibold text-slate-800">${prod.name}</td>
+                        <td class="p-3 text-right font-bold text-brand-600 text-sm">${r.qty} pcs</td>
+                        <td class="p-3 text-slate-500">${r.notes || '-'}</td>
+                        <td class="p-3 text-center space-x-1">
+                            <button onclick="approveRestockRequest('${r.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-3 py-1.5 rounded transition shadow-sm">
+                                Approve & Add Stock
+                            </button>
+                            <button onclick="rejectRestockRequest('${r.id}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold px-3 py-1.5 rounded text-[11px] border border-rose-200 transition">
+                                Reject
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function approveRestockRequest(id) {
+            const req = restockRequests.find(r => r.id === id);
+            if (!req) return;
+
+            req.status = 'APPROVED';
+
+            // Add stock to branch inventory
+            if (!inventory[req.branch]) inventory[req.branch] = {};
+            inventory[req.branch][req.productId] = (inventory[req.branch][req.productId] || 0) + req.qty;
+
+            // Log Stock Movement
+            const prod = products.find(p => p.id === req.productId);
+            stockMovements.unshift({
+                id: 'MOV-' + Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                branch: req.branch,
+                productId: req.productId,
+                category: prod ? prod.category : 'GENERAL',
+                type: 'RESTOCK_IN',
+                direction: 'IN',
+                qty: req.qty,
+                amount: 0,
+                downpayment: 0,
+                paymentMethod: 'CASH',
+                notes: `Approved Restock Request (Req ID: ${req.id})`
+            });
+
+            saveAllData();
+            showToast(`Approved ${req.qty} pcs for ${req.branch}! Stock updated.`);
+            refreshUI();
+        }
+
+        function rejectRestockRequest(id) {
+            const req = restockRequests.find(r => r.id === id);
+            if (!req) return;
+            req.status = 'REJECTED';
+            saveAllData();
+            showToast(`Restock request rejected.`, "info");
+            refreshUI();
+        }
+
+        function approveAllRestockRequests() {
+            const pending = restockRequests.filter(r => r.status === 'PENDING');
+            if (pending.length === 0) {
+                showToast("No pending requests to approve.", "info");
+                return;
+            }
+            pending.forEach(r => approveRestockRequest(r.id));
+        }
+
+        // Admin Tab 3: Product Management
+        function renderAdminProducts() {
+            document.getElementById('productCountBadge').innerText = `${products.length} Products`;
+            const tbody = document.getElementById('adminProductsTableBody');
+
+            tbody.innerHTML = products.map(p => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-semibold">${p.category}</span></td>
+                    <td class="p-3 font-semibold text-slate-800">${p.name}</td>
+                    <td class="p-3 text-right font-bold text-slate-900">₱${(p.price || 0).toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="editProduct('${p.id}')" class="text-brand-600 hover:text-brand-800 font-semibold p-1" title="Edit">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteProduct('${p.id}')" class="text-rose-500 hover:text-rose-700 font-semibold p-1" title="Delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function handleProductSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('prodId').value;
+            const name = document.getElementById('prodName').value.trim();
+            const category = document.getElementById('prodCategory').value;
+            const price = parseFloat(document.getElementById('prodPrice').value) || 0;
+            const initStock = parseInt(document.getElementById('prodInitialStock').value) || 0;
+
+            if (id) {
+                // Update existing
+                const prod = products.find(p => p.id === id);
+                if (prod) {
+                    prod.name = name;
+                    prod.category = category;
+                    prod.price = price;
+                }
+                showToast("Product details updated.");
+            } else {
+                // Add new
+                const newId = 'P' + (Date.now() % 10000);
+                const newProd = { id: newId, name, category, price };
+                products.push(newProd);
+
+                // Initialize stock across branches
+                BRANCHES.forEach(b => {
+                    if (!inventory[b]) inventory[b] = {};
+                    inventory[b][newId] = initStock;
+                });
+                showToast("New product created.");
+            }
+
+            saveAllData();
+            resetProductForm();
+            refreshUI();
+        }
+
+        function editProduct(id) {
+            const prod = products.find(p => p.id === id);
+            if (!prod) return;
+            document.getElementById('prodFormTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-brand-500"></i> Edit Product`;
+            document.getElementById('prodId').value = prod.id;
+            document.getElementById('prodName').value = prod.name;
+            document.getElementById('prodCategory').value = prod.category;
+            document.getElementById('prodPrice').value = prod.price;
+            document.getElementById('prodInitialStock').parentElement.classList.add('hidden');
+        }
+
+        function resetProductForm() {
+            document.getElementById('prodFormTitle').innerHTML = `<i class="fa-solid fa-plus-circle text-brand-500"></i> Add New Product`;
+            document.getElementById('productForm').reset();
+            document.getElementById('prodId').value = "";
+            document.getElementById('prodInitialStock').parentElement.classList.remove('hidden');
+        }
+
+        function deleteProduct(id) {
+            if (confirm("Deleting this product will remove it from the product list. Continue?")) {
+                products = products.filter(p => p.id !== id);
+                BRANCHES.forEach(b => {
+                    if (inventory[b]) delete inventory[b][id];
+                });
+                saveAllData();
+                showToast("Product deleted.", "info");
+                refreshUI();
+            }
+        }
+
+        // Admin Tab 4: Current Stock Tracker
+        function renderAdminStockTracker() {
+            const branchFilter = document.getElementById('stockFilterBranch').value;
+            const catFilter = document.getElementById('stockFilterCategory').value;
+
+            const tbody = document.getElementById('adminStockTableBody');
+            let rowsHtml = '';
+
+            BRANCHES.forEach(b => {
+                if (branchFilter && b !== branchFilter) return;
+
+                products.forEach(p => {
+                    if (catFilter && p.category !== catFilter) return;
+
+                    const stock = (inventory[b] && inventory[b][p.id] !== undefined) ? inventory[b][p.id] : 0;
+                    
+                    let statusBadge = '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">IN STOCK</span>';
+                    if (stock === 0) {
+                        statusBadge = '<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold text-[10px]">OUT OF STOCK</span>';
+                    } else if (stock <= 5) {
+                        statusBadge = '<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]">LOW STOCK</span>';
+                    }
+
+                    rowsHtml += `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-3 font-bold text-slate-900">${b}</td>
+                            <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-semibold">${p.category}</span></td>
+                            <td class="p-3 font-medium text-slate-800">${p.name}</td>
+                            <td class="p-3 text-right font-bold text-slate-900 text-sm">${stock} pcs</td>
+                            <td class="p-3 text-center">${statusBadge}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            tbody.innerHTML = rowsHtml || `<tr><td colspan="5" class="text-center py-6 text-slate-400">No matching stock items found.</td></tr>`;
+        }
+
+        // Admin Tab 5: Sales & Expenses Summary
+        function renderAdminSalesSummary() {
+            let totalSales = 0;
+            let totalDownpayment = 0;
+            let totalBalance = 0;
+            let totalExp = 0;
+
+            // Compute totals from movements (SOLD type) and expenses
+            stockMovements.forEach(m => {
+                if (m.type === 'SOLD') {
+                    const salesVal = m.amount || 0;
+                    const dpVal = m.downpayment !== undefined ? m.downpayment : salesVal;
+                    const bal = salesVal - dpVal;
+
+                    totalSales += salesVal;
+                    totalDownpayment += dpVal;
+                    totalBalance += (bal > 0 ? bal : 0);
+                }
+            });
+
+            expenses.forEach(e => {
+                totalExp += (e.amount || 0);
+            });
+
+            document.getElementById('sumTotalSales').innerText = `₱${totalSales.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+            document.getElementById('sumTotalDownpayment').innerText = `₱${totalDownpayment.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+            document.getElementById('sumTotalBalance').innerText = `₱${totalBalance.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+            document.getElementById('sumTotalExpenses').innerText = `₱${totalExp.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+
+            // Combine sales movements & expenses for journal log view
+            const journal = [];
+            stockMovements.forEach(m => {
+                if (m.type === 'SOLD') {
+                    const prod = products.find(p => p.id === m.productId) || { name: 'Unknown' };
+                    const salesVal = m.amount || 0;
+                    const dpVal = m.downpayment !== undefined ? m.downpayment : salesVal;
+                    const bal = salesVal - dpVal;
+                    journal.push({
+                        id: m.id,
+                        date: m.date,
+                        branch: m.branch,
+                        type: 'SALE',
+                        description: `${prod.name} (${m.qty} pcs)`,
+                        sales: salesVal,
+                        downpayment: dpVal,
+                        balance: bal > 0 ? bal : 0,
+                        expense: 0,
+                        rawType: 'MOV'
+                    });
+                }
+            });
+
+            expenses.forEach(e => {
+                journal.push({
+                    id: e.id,
+                    date: e.date,
+                    branch: e.branch,
+                    type: 'EXPENSE',
+                    description: `${e.description} (${e.notes || 'No notes'})`,
+                    sales: 0,
+                    downpayment: 0,
+                    balance: 0,
+                    expense: e.amount || 0,
+                    rawType: 'EXP'
+                });
+            });
+
+            // Sort journal descending by date
+            journal.sort((a, b) => (b.date > a.date ? 1 : -1));
+
+            const tbody = document.getElementById('adminSalesTableBody');
+            if (journal.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">No financial activity logged.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = journal.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 text-slate-700 font-medium">${item.date}</td>
+                    <td class="p-3 font-bold text-slate-900">${item.branch}</td>
+                    <td class="p-3">
+                        <span class="${item.type === 'SALE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'} px-2 py-0.5 rounded text-[10px] font-bold">
+                            ${item.type}
+                        </span>
+                    </td>
+                    <td class="p-3 font-medium text-slate-800">${item.description}</td>
+                    <td class="p-3 text-right font-semibold text-emerald-600">${item.sales > 0 ? '₱' + item.sales.toLocaleString('en-US', {minimumFractionDigits:2}) : '-'}</td>
+                    <td class="p-3 text-right font-medium text-slate-700">${item.downpayment > 0 ? '₱' + item.downpayment.toLocaleString('en-US', {minimumFractionDigits:2}) : '-'}</td>
+                    <td class="p-3 text-right font-medium text-amber-600">${item.balance > 0 ? '₱' + item.balance.toLocaleString('en-US', {minimumFractionDigits:2}) : '-'}</td>
+                    <td class="p-3 text-right font-semibold text-rose-600">${item.expense > 0 ? '₱' + item.expense.toLocaleString('en-US', {minimumFractionDigits:2}) : '-'}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteJournalItem('${item.id}', '${item.rawType}')" class="text-rose-500 hover:text-rose-700 font-semibold p-1" title="Delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteJournalItem(id, rawType) {
+            if (confirm("Delete this financial journal entry?")) {
+                if (rawType === 'MOV') {
+                    stockMovements = stockMovements.filter(m => m.id !== id);
+                } else if (rawType === 'EXP') {
+                    expenses = expenses.filter(e => e.id !== id);
+                }
+                saveAllData();
+                showToast("Entry removed.", "info");
+                refreshUI();
+            }
+        }
+
+        // Admin Tab 6: Admin Cash On Hand
+        function renderAdminCashOnHand() {
+            BRANCHES.forEach(b => {
+                const cashData = calculateBranchCash(b);
+                const cashCardIds = {
+    BATAAN: "cashCardBataan",
+    CONCEPCION: "cashCardConcepcion",
+    CAPAS: "cashCardCapas",
+    GUIMBA: "cashCardGuimba",
+    PANIQUI: "cashCardPaniqui",
+    ONE: "cashCardOne",
+    TWO: "cashCardTwo",
+    THREE: "cashCardThree",
+    FOUR: "cashCardFour",
+    FIVE: "cashCardFive"
+};
+
+const card = document.getElementById(
+    cashCardIds[b]
+);
+                if (!card) return;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h4 class="font-bold text-slate-900 text-lg">${b} BRANCH</h4>
+                        <span class="bg-brand-50 text-brand-700 px-2.5 py-1 rounded-full text-xs font-bold">Vault Status</span>
+                    </div>
+                    <div class="space-y-2 text-xs text-slate-600 pt-1">
+                        <div class="flex justify-between">
+                            <span>Cash Sales & Downpayments Received:</span>
+                            <span class="font-semibold text-emerald-600">+₱${cashData.cashIn.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Branch Out-of-Pocket Expenses:</span>
+                            <span class="font-semibold text-rose-600">-₱${cashData.cashOut.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                        </div>
+                        <div class="border-t pt-3 flex justify-between items-center text-sm font-bold text-slate-900">
+                            <span>Net Cash On Hand:</span>
+                            <span class="text-xl text-brand-600">₱${cashData.netCash.toLocaleString('en-US', {minimumFractionDigits:2})}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function calculateBranchCash(branch) {
+            let cashIn = 0;
+            stockMovements.forEach(m => {
+                if (m.branch === branch && m.type === 'SOLD' && (m.paymentMethod === 'CASH' || !m.paymentMethod)) {
+                    // Only cash collected contributes to cash on hand (downpayment or full amount)
+                   let collected = 0;
+
+if ((m.downpayment || 0) > 0) {
+    collected = m.downpayment;
+} else {
+    collected = m.amount || 0;
 }
 
-async function requireResetPhrase(actionLabel, phrase){
- if(!isAdmin()){alert('Admin access required.');return false;}
- const typed=prompt(actionLabel+'\n\nThis permanently deletes live transaction data and cannot be undone.\nType '+phrase+' to continue:');
- return typed===phrase;
-}
-async function resetDeleteAll(table){
- const {error}=await sb.from(table).delete().not('id','is',null);
- if(error)throw error;
-}
-async function finishDataReset(message){
- const msg=document.getElementById('resetDataMsg');
- if(msg)msg.textContent=message;
- await refreshCloud();
- render();
-}
-async function resetStockMovements(){
- if(!await requireResetPhrase('RESET STOCK MOVEMENTS','RESET STOCK'))return;
- try{await resetDeleteAll('stock_movements');await finishDataReset('Stock movements reset successfully.');}
- catch(e){alert('Reset failed: '+e.message);}
-}
-async function resetBranchExpenses(){
- if(!await requireResetPhrase('RESET BRANCH EXPENSES','RESET EXPENSES'))return;
- try{await resetDeleteAll('branch_expenses');await finishDataReset('Branch expenses reset successfully.');}
- catch(e){alert('Reset failed: '+e.message);}
-}
-async function resetRestockRequests(){
- if(!await requireResetPhrase('RESET RESTOCK REQUESTS','RESET RESTOCK'))return;
- try{await resetDeleteAll('restock_requests');await finishDataReset('Restock requests reset successfully.');}
- catch(e){alert('Reset failed: '+e.message);}
-}
-async function resetAllTransactionData(){
- if(!await requireResetPhrase('RESET ALL TRANSACTION DATA','RESET ALL DATA'))return;
- if(!confirm('FINAL WARNING: Delete stock movements, branch expenses, and restock requests?'))return;
- try{
-  await resetDeleteAll('restock_requests');
-  await resetDeleteAll('branch_expenses');
-  await resetDeleteAll('stock_movements');
-  await finishDataReset('All selected transaction data reset successfully.');
- }catch(e){alert('Reset failed: '+e.message);}
-}
-cloudInit();
+           cashIn += collected;
+                }
+            });
 
-</script>
-</body></html>
+            let cashOut = 0;
+            expenses.forEach(e => {
+                if (e.branch === branch) {
+                    cashOut += (e.amount || 0);
+                }
+            });
+
+            return {
+                cashIn,
+                cashOut,
+                netCash: cashIn - cashOut
+            };
+        }
+
+        // =========================================================================
+        // BRANCH WORKSPACE LOGIC
+        // =========================================================================
+
+        function switchBranchTab(tab) {
+            const tabs = ['dashboard', 'inventory', 'movement', 'swap', 'expenses', 'restock'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`tab-branch-${t}`);
+                const content = document.getElementById(`branchTab${capitalize(t)}`);
+                if (t === tab) {
+                    navBtn.className = "px-4 py-2.5 rounded-lg transition flex items-center gap-2 bg-brand-50 text-brand-600 font-semibold border-b-2 border-brand-500";
+                    content.classList.remove('hidden');
+                } else {
+                    navBtn.className = "px-4 py-2.5 rounded-lg transition flex items-center gap-2 text-slate-600 hover:bg-slate-50";
+                    content.classList.add('hidden');
+                }
+            });
+            refreshUI();
+        }
+
+        function renderBranchHeaderCash() {
+            const cashData = calculateBranchCash(currentRole);
+            document.getElementById('branchHeaderCash').innerText = `₱${cashData.netCash.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+        }
+
+        // Branch Tab 1: Dashboard
+        function renderBranchDashboard() {
+            let totalSales = 0;
+            let totalExp = 0;
+            let totalSoldQty = 0;
+
+            const today = new Date().toISOString().split('T')[0];
+
+            stockMovements.forEach(m => {
+                if (m.branch === currentRole && m.type === 'SOLD') {
+                    totalSales += (m.amount || 0);
+                    if (m.date === today) {
+                        totalSoldQty += (m.qty || 0);
+                    }
+                }
+            });
+
+            expenses.forEach(e => {
+                if (e.branch === currentRole) {
+                    totalExp += (e.amount || 0);
+                }
+            });
+
+            document.getElementById('bDashSales').innerText = `₱${totalSales.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+            document.getElementById('bDashExpenses').innerText = `₱${totalExp.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+            document.getElementById('bDashSoldQty').innerText = `${totalSoldQty} pcs`;
+
+            // Recent activity log for this branch
+            const activities = [];
+            stockMovements.filter(m => m.branch === currentRole).forEach(m => {
+                const prod = products.find(p => p.id === m.productId) || { name: 'Unknown' };
+                activities.push({
+                    date: m.date,
+                    action: m.type,
+                    details: `${prod.name} (${m.qty} pcs)`,
+                    impact: m.direction === 'IN' ? `+${m.qty} pcs` : `-${m.qty} pcs`,
+                    isPositive: m.direction === 'IN'
+                });
+            });
+
+            expenses.filter(e => e.branch === currentRole).forEach(e => {
+                activities.push({
+                    date: e.date,
+                    action: 'EXPENSE',
+                    details: e.description,
+                    impact: `-₱${(e.amount || 0).toFixed(2)}`,
+                    isPositive: false
+                });
+            });
+
+            activities.sort((a, b) => (b.date > a.date ? 1 : -1));
+
+            const tbody = document.getElementById('branchDashboardActivityBody');
+            if (activities.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-400">No recent activity recorded for this branch.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = activities.slice(0, 10).map(a => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 text-slate-700 font-medium">${a.date}</td>
+                    <td class="p-3"><span class="bg-brand-50 text-brand-700 px-2 py-0.5 rounded text-[10px] font-bold">${a.action}</span></td>
+                    <td class="p-3 font-medium text-slate-800">${a.details}</td>
+                    <td class="p-3 text-right font-bold ${a.isPositive ? 'text-emerald-600' : 'text-rose-600'}">${a.impact}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Branch Tab 2: My Inventory
+        function renderBranchInventory() {
+            const search = (document.getElementById('branchInvSearch').value || '').toLowerCase();
+            const catFilter = document.getElementById('branchInvCategory').value;
+            const tbody = document.getElementById('branchInventoryTableBody');
+
+            const filteredProds = products.filter(p => {
+                if (search && !p.name.toLowerCase().includes(search)) return false;
+                if (catFilter && p.category !== catFilter) return false;
+                return true;
+            });
+
+            if (filteredProds.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No matching inventory items.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredProds.map(p => {
+                const stock = (inventory[currentRole] && inventory[currentRole][p.id] !== undefined) ? inventory[currentRole][p.id] : 0;
+                
+                let badge = '<span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded font-bold text-[10px]">IN STOCK</span>';
+                if (stock === 0) {
+                    badge = '<span class="bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded font-bold text-[10px]">OUT OF STOCK</span>';
+                } else if (stock <= 5) {
+                    badge = '<span class="bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded font-bold text-[10px]">LOW STOCK</span>';
+                }
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-semibold">${p.category}</span></td>
+                        <td class="p-3 font-semibold text-slate-800">${p.name}</td>
+                        <td class="p-3 text-right font-semibold text-slate-700">₱${(p.price || 0).toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                        <td class="p-3 text-right font-bold text-slate-900 text-sm">${stock} pcs</td>
+                        <td class="p-3 text-center">${badge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Branch Tab 3: Movement / Sale Form Helpers
+        function populateBranchProductSelects() {
+            const movSelect = document.getElementById('bMovProduct');
+            const swapRemSelect = document.getElementById('swapRemovedProduct');
+            const swapAddSelect = document.getElementById('swapAddedProduct');
+            const reqSelect = document.getElementById('reqProduct');
+
+            if (!movSelect) return;
+
+            // General Product Options
+            const allOpts = products.map(p => `<option value="${p.id}">${p.name} (${p.category})</option>`).join('');
+            movSelect.innerHTML = allOpts;
+            reqSelect.innerHTML = allOpts;
+
+            // Filter Clear Cases for Swap Form
+            const clearCases = products.filter(p => p.category === 'CLEAR CASE');
+            const swapOpts = clearCases.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+            if (clearCases.length > 0) {
+                swapRemSelect.innerHTML = swapOpts;
+                swapAddSelect.innerHTML = swapOpts;
+            } else {
+                swapRemSelect.innerHTML = `<option value="">No Clear Cases Available</option>`;
+                swapAddSelect.innerHTML = `<option value="">No Clear Cases Available</option>`;
+            }
+        }
+
+        function updateBranchMovFormState() {
+            const type = document.getElementById('bMovType').value;
+            const containerAmt = document.getElementById('containerTotalAmount');
+            const containerPay = document.getElementById('containerPaymentDetails');
+
+            if (type === 'SOLD') {
+                containerAmt.classList.remove('hidden');
+                containerPay.classList.remove('hidden');
+            } else {
+                containerAmt.classList.add('hidden');
+                containerPay.classList.add('hidden');
+            }
+        }
+
+        function handleBranchMovementSubmit(e) {
+            e.preventDefault();
+            const date = document.getElementById('bMovDate').value;
+            const type = document.getElementById('bMovType').value;
+            const productId = document.getElementById('bMovProduct').value;
+            const qty = parseInt(document.getElementById('bMovQty').value) || 1;
+            const amount = parseFloat(document.getElementById('bMovAmount').value) || 0;
+            const downpayment = parseFloat(document.getElementById('bMovDownpayment').value) || 0;
+            const paymentMethod = document.getElementById('bMovPaymentMethod').value;
+            const notes = document.getElementById('bMovNotes').value.trim();
+
+            const prod = products.find(p => p.id === productId);
+            if (!prod) return;
+
+            const direction = (type === 'SOLD' || type === 'MANUAL_OUT') ? 'OUT' : 'IN';
+
+            // Verify stock sufficiency if OUT
+            const currentStock = (inventory[currentRole] && inventory[currentRole][productId]) || 0;
+            if (direction === 'OUT' && currentStock < qty) {
+                showToast(`Insufficient stock! You only have ${currentStock} pcs.`, "error");
+                return;
+            }
+
+            // Update local stock count
+            if (!inventory[currentRole]) inventory[currentRole] = {};
+            if (direction === 'OUT') {
+                inventory[currentRole][productId] = currentStock - qty;
+            } else {
+                inventory[currentRole][productId] = currentStock + qty;
+            }
+
+            // Record Movement
+            stockMovements.unshift({
+                id: 'MOV-' + Date.now(),
+                date,
+                branch: currentRole,
+                productId,
+                category: prod.category,
+                type,
+                direction,
+                qty,
+                amount: type === 'SOLD' ? amount : 0,
+                downpayment: type === 'SOLD' ? downpayment : 0,
+                paymentMethod: type === 'SOLD' ? paymentMethod : 'CASH',
+                notes
+            });
+
+            saveAllData();
+            showToast("Movement recorded successfully.");
+            document.getElementById('branchMovForm').reset();
+            setTodayDateInputs();
+            refreshUI();
+        }
+
+        // Branch Tab 4: Clear Case Swap
+        function handleBranchSwapSubmit(e) {
+            e.preventDefault();
+            const date = document.getElementById('swapDate').value;
+            const removedId = document.getElementById('swapRemovedProduct').value;
+            const addedId = document.getElementById('swapAddedProduct').value;
+            const qty = parseInt(document.getElementById('swapQty').value) || 1;
+            const notes = document.getElementById('swapNotes').value.trim();
+
+            if (removedId === addedId) {
+                showToast("Cannot swap identical product items.", "error");
+                return;
+            }
+
+            const remProd = products.find(p => p.id === removedId);
+            const addProd = products.find(p => p.id === addedId);
+
+            const currentRemStock = (inventory[currentRole] && inventory[currentRole][removedId]) || 0;
+            if (currentRemStock < qty) {
+                showToast(`Insufficient stock for ${remProd.name}! Available: ${currentRemStock}`, "error");
+                return;
+            }
+
+            // Deduct removed case, add new case
+            inventory[currentRole][removedId] = currentRemStock - qty;
+            inventory[currentRole][addedId] = ((inventory[currentRole][addedId]) || 0) + qty;
+
+            // Log double movement
+            stockMovements.unshift({
+                id: 'MOV-' + Date.now() + '-OUT',
+                date,
+                branch: currentRole,
+                productId: removedId,
+                category: remProd.category,
+                type: 'SWAP',
+                direction: 'OUT',
+                qty,
+                amount: 0,
+                downpayment: 0,
+                paymentMethod: 'CASH',
+                notes: `Clear Case Swap (Removed for ${addProd.name}). ${notes}`
+            });
+
+            stockMovements.unshift({
+                id: 'MOV-' + Date.now() + '-IN',
+                date,
+                branch: currentRole,
+                productId: addedId,
+                category: addProd.category,
+                type: 'SWAP',
+                direction: 'IN',
+                qty,
+                amount: 0,
+                downpayment: 0,
+                paymentMethod: 'CASH',
+                notes: `Clear Case Swap (Added in exchange of ${remProd.name}). ${notes}`
+            });
+
+            saveAllData();
+            showToast("Clear Case Swap completed!");
+            document.getElementById('branchSwapForm').reset();
+            setTodayDateInputs();
+            refreshUI();
+        }
+
+        // Branch Tab 5: Branch Related Expenses
+        function handleBranchExpenseSubmit(e) {
+            e.preventDefault();
+            const date = document.getElementById('expDate').value;
+            const description = document.getElementById('expDesc').value.trim();
+            const amount = parseFloat(document.getElementById('expAmount').value) || 0;
+            const notes = document.getElementById('expNotes').value.trim();
+
+            expenses.unshift({
+                id: 'EXP-' + Date.now(),
+                date,
+                branch: currentRole,
+                description,
+                amount,
+                notes
+            });
+
+            saveAllData();
+            showToast("Expense recorded and Cash On Hand updated.");
+            document.getElementById('branchExpenseForm').reset();
+            setTodayDateInputs();
+            refreshUI();
+        }
+
+        function renderBranchExpenses() {
+            const tbody = document.getElementById('branchExpensesTableBody');
+            const branchExp = expenses.filter(e => e.branch === currentRole);
+
+            if (branchExp.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-400">No expenses logged for this branch.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = branchExp.map(e => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-medium text-slate-700">${e.date}</td>
+                    <td class="p-3 font-semibold text-slate-900">${e.description}</td>
+                    <td class="p-3 text-slate-500">${e.notes || '-'}</td>
+                    <td class="p-3 text-right font-bold text-rose-600">₱${(e.amount || 0).toLocaleString('en-US', {minimumFractionDigits:2})}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Branch Tab 6: Restock Requests
+        function handleBranchRestockSubmit(e) {
+            e.preventDefault();
+            const date = document.getElementById('reqDate').value;
+            const productId = document.getElementById('reqProduct').value;
+            const qty = parseInt(document.getElementById('reqQty').value) || 1;
+            const notes = document.getElementById('reqNotes').value.trim();
+
+            restockRequests.unshift({
+                id: 'REQ-' + Date.now(),
+                date,
+                branch: currentRole,
+                productId,
+                qty,
+                notes,
+                status: 'PENDING'
+            });
+
+            saveAllData();
+            showToast("Restock request submitted to Admin.");
+            document.getElementById('branchRestockForm').reset();
+            setTodayDateInputs();
+            refreshUI();
+        }
+
+        function renderBranchRestockLog() {
+            const tbody = document.getElementById('branchRestockTableBody');
+            const branchReqs = restockRequests.filter(r => r.branch === currentRole);
+
+            if (branchReqs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No restock requests sent yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = branchReqs.map(r => {
+                const prod = products.find(p => p.id === r.productId) || { name: 'Unknown' };
+                let statusBadge = '<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold text-[10px]">PENDING</span>';
+                if (r.status === 'APPROVED') statusBadge = '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold text-[10px]">APPROVED</span>';
+                if (r.status === 'REJECTED') statusBadge = '<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold text-[10px]">REJECTED</span>';
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 text-slate-700 font-medium">${r.date}</td>
+                        <td class="p-3 font-semibold text-slate-800">${prod.name}</td>
+                        <td class="p-3 text-right font-bold text-slate-900">${r.qty} pcs</td>
+                        <td class="p-3 text-center">${statusBadge}</td>
+                        <td class="p-3 text-slate-500">${r.notes || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Helper Utility
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+function loginSystem(){
+
+    const branch =
+        document.getElementById("loginBranch").value;
+
+    const password =
+        document.getElementById("loginPassword").value;
+
+    if(USERS[branch] === password){
+
+        localStorage.setItem(
+            "loggedUser",
+            branch
+        );
+
+        document.getElementById(
+            "loginScreen"
+        ).style.display = "none";
+
+        switchRole(branch);
+
+document.getElementById(
+    "roleSelector"
+).parentElement.style.display = "none";
+
+showToast("Login Successful");
+
+    }else{
+
+        alert("Wrong Password");
+
+    }
+}
+
+function logoutSystem(){
+
+    localStorage.removeItem(
+        "loggedUser"
+    );
+
+    location.reload();
+
+}
+    </script>
+</body>
+</html>
