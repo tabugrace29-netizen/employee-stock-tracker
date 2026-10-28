@@ -44,8 +44,8 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
 
 <div id="loginScreen"
@@ -868,6 +868,76 @@ class="text-xs bg-rose-500 hover:bg-rose-600 text-white font-medium py-2 px-3 ro
             { id: "P104", name: "iPhone 13 Tempered Glass 9H", category: "TEMPERED GLASS", price: 150 },
             { id: "P105", name: "Generic Powerbank 10000mAh", category: "GENERAL UNITS", price: 890 }
         ];
+// SUPABASE
+const SUPABASE_URL =
+    "https://vxuuzinieabzekcandgv.supabase.co";
+
+const SUPABASE_ANON_KEY =
+    "sb_publishable_rh6yxIhUHEkBkpyZtqz5pQ_lIHYyAX4";
+
+const supabaseTest =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+    );
+
+async function testSupabase() {
+
+    const { data, error } =
+        await supabaseTest
+            .from('products')
+            .select('*');
+
+    console.log(
+        "Supabase Test:",
+        data,
+        error
+    );
+
+}
+
+async function saveProductToSupabase(product) {
+    console.log(
+        "Attempting Supabase save:",
+        product
+    );
+
+  const { data, error: saveError } =
+        await supabaseTest
+            .from('products')
+            .insert([
+                {
+                    id: product.id,
+                    name: product.name,
+                    category: product.category,
+                    price: product.price
+                }
+            ])
+            .select();
+console.log(
+    "Supabase Result:",
+    data,
+    saveError
+);
+
+    if (saveError) {
+
+        console.error(
+    "Supabase Product Error:",
+    saveError
+);
+
+
+    } else {
+
+        console.log(
+            "Product saved to Supabase"
+        );
+
+    }
+}
+   
+
 const USERS = {
     ADMIN: "admin123",
 
@@ -907,8 +977,11 @@ const USERS = {
         // --- INITIALIZATION ---
         window.onload = function() {
 
-    initData();
+    testSupabase();
 
+initData();
+
+// loadProductsFromSupabase();
     setTodayDateInputs();
 
     const savedUser =
@@ -923,11 +996,9 @@ const USERS = {
         switchRole(savedUser);
 
     }
-
 };
-
-        function setTodayDateInputs() {
-            const today = new Date().toISOString().split('T')[0];
+            function setTodayDateInputs() {
+const today = new Date().toISOString().split('T')[0];
             const dateInputs = ['bMovDate', 'swapDate', 'expDate', 'reqDate'];
             dateInputs.forEach(id => {
                 const el = document.getElementById(id);
@@ -1277,7 +1348,36 @@ const USERS = {
         }
 
         // Admin Tab 3: Product Management
-        function renderAdminProducts() {
+        async function loadProductsFromSupabase() {
+
+    const { data, error } =
+        await supabaseTest
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+    if (error) {
+
+        console.error(
+            'Load Products Error:',
+            error
+        );
+
+        return;
+    }
+
+    products = data || [];
+
+    renderAdminProducts();
+
+    console.log(
+        'Products loaded from Supabase:',
+        products.length
+    );
+}
+
+function renderAdminProducts() {
+
             document.getElementById('productCountBadge').innerText = `${products.length} Products`;
             const tbody = document.getElementById('adminProductsTableBody');
 
@@ -1320,6 +1420,7 @@ const USERS = {
                 const newId = 'P' + (Date.now() % 10000);
                 const newProd = { id: newId, name, category, price };
                 products.push(newProd);
+saveProductToSupabase(newProd);
 
                 // Initialize stock across branches
                 BRANCHES.forEach(b => {
