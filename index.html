@@ -981,7 +981,7 @@ const USERS = {
 
 initData();
 
-// loadProductsFromSupabase();
+loadProductsFromSupabase();
     setTodayDateInputs();
 
     const savedUser =
@@ -1350,30 +1350,41 @@ const today = new Date().toISOString().split('T')[0];
         // Admin Tab 3: Product Management
         async function loadProductsFromSupabase() {
 
-    const { data, error } =
-        await supabaseTest
+    try {
+
+        const { data, error } = await supabaseTest
             .from('products')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .select('*');
 
-    if (error) {
+        if (error) {
 
-        console.error(
-            'Load Products Error:',
-            error
+            console.error(
+                'Load Products Error:',
+                error
+            );
+
+            return;
+
+        }
+
+        products = data || [];
+
+        console.log(
+            'Products loaded:',
+            products.length
         );
 
-        return;
+        renderAdminProducts();
+
+    } catch (err) {
+
+        console.error(
+            'Loader crashed:',
+            err
+        );
+
     }
 
-    products = data || [];
-
-    renderAdminProducts();
-
-    console.log(
-        'Products loaded from Supabase:',
-        products.length
-    );
 }
 
 function renderAdminProducts() {
